@@ -1,0 +1,1562 @@
+"""
+Self-contained generator for docs/ATELIER_OPERATOR_GUIDE.html and docs/ATELIER_OPERATOR_GUIDE.pdf.
+Strictly conforms to the 'Slow Morning' Coffee Editorial Design System:
+- Espresso (#1C1310), Roast (#3A2619), Mocha (#6B4630), Caramel (#B8772F), Latte (#D2AE82), Crema (#EBDCC2), Foam (#F7F0E3).
+- Zero raw unrendered LaTeX math formulas.
+- High-contrast, easily understandable figures and step-by-step UI mockups.
+"""
+import os
+import subprocess
+import pypdfium2 as pdfium
+
+DOCS_DIR = os.path.abspath(r"c:\Sejal project\docs")
+HTML_PATH = os.path.join(DOCS_DIR, "ATELIER_OPERATOR_GUIDE.html")
+PDF_PATH = os.path.join(DOCS_DIR, "ATELIER_OPERATOR_GUIDE.pdf")
+CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+
+print("=" * 70)
+print(" GENERATING ATELIER_OPERATOR_GUIDE.HTML & PDF")
+print("=" * 70)
+
+html_content = """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ATELIER // PRESENCE — Official Operator Manual &amp; Pedagogical Telemetry Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --espresso:    #1C1310;
+      --roast:       #3A2619;
+      --mocha:       #6B4630;
+      --caramel:     #B8772F;
+      --latte:       #D2AE82;
+      --crema:       #EBDCC2;
+      --foam:        #F7F0E3;
+      --pure-paper:  #FAF6EE;
+      --card-bg:     #F4EDE2;
+      --card-border: #D8C3AC;
+      --accent-green:#3F624D;
+      --accent-amber:#D28A3E;
+
+      --font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+      --font-sans:  'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono:  'JetBrains Mono', Consolas, 'Courier New', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    @page {
+      size: A4 portrait; /* 210mm x 297mm */
+      margin: 0;
+    }
+
+    @media print {
+      html, body {
+        width: 210mm;
+        margin: 0;
+        padding: 0;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        background-color: var(--foam);
+      }
+      .page {
+        margin: 0 !important;
+        box-shadow: none !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      .page:last-child {
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
+    }
+
+    @media screen {
+      body {
+        background-color: #2D1E16;
+        padding: 36px 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 28px;
+      }
+      .page {
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+      }
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      height: 297mm;
+      max-height: 297mm;
+      position: relative;
+      box-sizing: border-box;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      page-break-after: always;
+      break-after: page;
+      overflow: hidden;
+      background-color: var(--foam);
+      color: var(--espresso);
+      padding: 13mm 15mm 13mm 15mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-family: var(--font-sans);
+      font-size: 8.4pt;
+      line-height: 1.45;
+    }
+
+    /* Dark Cover Theme */
+    .page.page-cover-dark {
+      background-color: var(--espresso);
+      color: var(--foam);
+    }
+
+    .content-wrap {
+      position: relative;
+      z-index: 2;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      height: calc(297mm - 26mm);
+      overflow: hidden;
+    }
+
+    /* Running Header */
+    .running-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 2mm;
+      border-bottom: 1px solid var(--latte);
+      margin-bottom: 3mm;
+      font-family: var(--font-mono);
+      font-size: 6.8pt;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mocha);
+    }
+    .page-cover-dark .running-header {
+      border-bottom-color: var(--roast);
+      color: var(--latte);
+    }
+    .running-header .doc-id {
+      color: var(--caramel);
+      font-weight: 600;
+    }
+
+    /* Running Footer */
+    .running-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 2mm;
+      border-top: 1px solid var(--latte);
+      margin-top: 2.5mm;
+      font-family: var(--font-mono);
+      font-size: 6.5pt;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mocha);
+    }
+    .page-cover-dark .running-footer {
+      border-top-color: var(--roast);
+      color: var(--latte);
+    }
+    .running-footer .folio-pill {
+      background-color: var(--crema);
+      color: var(--espresso);
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 2px;
+    }
+    .page-cover-dark .running-footer .folio-pill {
+      background-color: var(--roast);
+      color: var(--foam);
+      border: 1px solid var(--mocha);
+    }
+
+    /* Headings */
+    h1, h2, h3, h4 {
+      font-family: var(--font-serif);
+      font-weight: 500;
+      line-height: 1.15;
+    }
+    .serif-italic {
+      font-style: italic;
+      font-variation-settings: 'opsz' 144;
+    }
+
+    .page-title-block {
+      margin-bottom: 2.8mm;
+    }
+    .page-num-label {
+      font-family: var(--font-mono);
+      font-size: 7.2pt;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      color: var(--caramel);
+      text-transform: uppercase;
+      margin-bottom: 1.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .page-num-label::before {
+      content: "";
+      display: inline-block;
+      width: 12px;
+      height: 1.5px;
+      background-color: var(--caramel);
+    }
+    .page-heading {
+      font-size: 16pt;
+      letter-spacing: -0.02em;
+      color: var(--espresso);
+      margin-bottom: 2px;
+    }
+    .page-cover-dark .page-heading {
+      color: var(--foam);
+    }
+    .page-subheading {
+      font-size: 8.2pt;
+      color: var(--mocha);
+      font-weight: 400;
+      line-height: 1.35;
+    }
+    .page-cover-dark .page-subheading {
+      color: var(--latte);
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3.5mm;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 3mm;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2.5mm;
+    }
+
+    /* Elevated Editorial Cards */
+    .card {
+      background-color: var(--pure-paper);
+      border: 1px solid var(--card-border);
+      border-radius: 3px;
+      padding: 3mm 3.5mm;
+    }
+    .card-dark {
+      background-color: #231713;
+      color: var(--foam);
+      border: 1px solid var(--roast);
+      border-radius: 3px;
+      padding: 3mm 3.5mm;
+    }
+
+    .card-title-mono {
+      font-family: var(--font-mono);
+      font-size: 7.2pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--roast);
+      margin-bottom: 1.5mm;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .card-dark .card-title-mono {
+      color: var(--caramel);
+    }
+
+    p {
+      font-size: 7.8pt;
+      line-height: 1.44;
+      color: var(--roast);
+    }
+    .page-cover-dark p {
+      color: var(--crema);
+    }
+
+    /* Infographic Figures */
+    .figure-frame {
+      background-color: var(--pure-paper);
+      border: 1px solid var(--card-border);
+      border-radius: 4px;
+      padding: 3mm;
+      margin: 2.2mm 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .figure-caption {
+      font-family: var(--font-mono);
+      font-size: 6.5pt;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mocha);
+      margin-top: 1.8mm;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    /* Tables */
+    table.clean-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 7.2pt;
+      margin-top: 1.5mm;
+    }
+    table.clean-table th {
+      font-family: var(--font-mono);
+      font-size: 6.6pt;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--espresso);
+      background-color: var(--crema);
+      border-top: 1px solid var(--latte);
+      border-bottom: 1.5px solid var(--latte);
+      padding: 2.5px 6px;
+      text-align: left;
+    }
+    table.clean-table td {
+      padding: 2.8px 6px;
+      border-bottom: 1px solid rgba(210, 174, 130, 0.4);
+      color: var(--espresso);
+      vertical-align: middle;
+    }
+    table.clean-table tr:last-child td {
+      border-bottom: 1px solid var(--latte);
+    }
+    table.clean-table tr:nth-child(even) td {
+      background-color: rgba(235, 220, 194, 0.25);
+    }
+
+    /* Dark Table on Cover Page */
+    table.dark-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 7.2pt;
+      margin-top: 1.5mm;
+    }
+    table.dark-table th {
+      font-family: var(--font-mono);
+      font-size: 6.6pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--caramel);
+      background-color: #2F1E18;
+      border-bottom: 1.5px solid var(--caramel);
+      padding: 3px 6px;
+      text-align: left;
+    }
+    table.dark-table td {
+      padding: 3px 6px;
+      border-bottom: 1px solid #3A2619;
+      color: var(--foam);
+      vertical-align: middle;
+    }
+    table.dark-table tr:last-child td {
+      border-bottom: none;
+    }
+    table.dark-table tr:nth-child(even) td {
+      background-color: rgba(58, 38, 25, 0.35);
+    }
+
+    /* Badges & Buttons */
+    .pill {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 6.2pt;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 1.5px 5px;
+      border-radius: 2px;
+      background: var(--crema);
+      color: var(--espresso);
+      border: 1px solid var(--latte);
+    }
+    .pill.caramel {
+      background: rgba(184, 119, 47, 0.15);
+      border-color: var(--caramel);
+      color: var(--caramel);
+      font-weight: 700;
+    }
+    .pill.green {
+      background: rgba(63, 98, 77, 0.15);
+      border-color: var(--accent-green);
+      color: var(--accent-green);
+      font-weight: 700;
+    }
+
+    /* UI Action Button Mockups */
+    .ui-btn-mock {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--font-mono);
+      font-size: 6.8pt;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 3px;
+      background: var(--caramel);
+      color: #1C1310;
+      border: 1px solid var(--caramel);
+    }
+    .ui-btn-mock.secondary {
+      background: #251713;
+      color: var(--foam);
+      border: 1px solid var(--roast);
+    }
+    .ui-btn-mock.light-secondary {
+      background: var(--crema);
+      color: var(--espresso);
+      border: 1px solid var(--latte);
+    }
+
+    /* Step Badge */
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 2px;
+      background: var(--caramel);
+      color: #1C1310;
+      font-family: var(--font-mono);
+      font-size: 7.5pt;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .callout-box {
+      background: #F9F2E7;
+      border-left: 3px solid var(--caramel);
+      padding: 2.2mm 3.2mm;
+      border-radius: 0 3px 3px 0;
+      margin: 2mm 0;
+    }
+    .callout-box p {
+      color: var(--espresso);
+      font-size: 7.5pt;
+    }
+    .svg-diagram {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================================
+       PAGE 1: EDITORIAL COVER & QUICK-START CHECKLIST (DARK ESPRESSO)
+       ======================================================================== -->
+  <div class="page page-cover-dark" id="guide-page-1">
+    <div class="content-wrap" style="justify-content: space-between;">
+      
+      <div class="running-header">
+        <span>ATELIER OPERATIONAL PAPERS // COMPENDIUM NO. 043-O</span>
+        <span class="doc-id">PRACTICAL OPERATOR MANUAL</span>
+        <span>REVISION 2026.10</span>
+      </div>
+
+      <div style="border: 1px solid var(--roast); padding: 4.5mm; background: radial-gradient(circle at 50% 35%, #2A1A14 0%, #1C1310 80%); border-radius: 4px; position: relative;">
+        <span style="position: absolute; top: -6px; left: -6px; font-family: var(--font-mono); font-size: 11px; color: var(--caramel);">+</span>
+        <span style="position: absolute; top: -6px; right: -6px; font-family: var(--font-mono); font-size: 11px; color: var(--caramel);">+</span>
+        <span style="position: absolute; bottom: -6px; left: -6px; font-family: var(--font-mono); font-size: 11px; color: var(--caramel);">+</span>
+        <span style="position: absolute; bottom: -6px; right: -6px; font-family: var(--font-mono); font-size: 11px; color: var(--caramel);">+</span>
+
+        <div style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 1mm 0 2mm 0;">
+          <svg width="72" height="72" viewBox="0 0 100 100" style="margin-bottom: 2.5mm;">
+            <circle cx="50" cy="50" r="47" fill="none" stroke="#6B4630" stroke-width="0.8" stroke-dasharray="2 2" />
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#B8772F" stroke-width="1.2" />
+            <circle cx="50" cy="50" r="34" fill="#251813" stroke="#D2AE82" stroke-width="0.8" />
+            <line x1="50" y1="3" x2="50" y2="12" stroke="#B8772F" stroke-width="1.4" />
+            <line x1="50" y1="88" x2="50" y2="97" stroke="#B8772F" stroke-width="1.4" />
+            <line x1="3" y1="50" x2="12" y2="50" stroke="#B8772F" stroke-width="1.4" />
+            <line x1="88" y1="50" x2="97" y2="50" stroke="#B8772F" stroke-width="1.4" />
+            <polygon points="50,22 56,41 76,50 56,59 50,78 44,59 24,50 44,41" fill="none" stroke="#B8772F" stroke-width="1" />
+            <polygon points="50,29 53,44 69,50 53,56 50,71 47,56 31,50 47,44" fill="#3A2619" stroke="#EBDCC2" stroke-width="0.8" />
+            <circle cx="50" cy="50" r="3.5" fill="#FAF6EE" />
+            <text x="50" y="47" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="4.2" fill="#B8772F" font-weight="700" letter-spacing="0.8">OPERATOR</text>
+            <text x="50" y="56" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="3.5" fill="#EBDCC2" letter-spacing="0.8">MANUAL</text>
+          </svg>
+
+          <div style="font-family: var(--font-mono); font-size: 7.2pt; letter-spacing: 0.25em; text-transform: uppercase; color: var(--caramel); margin-bottom: 1.5mm;">
+            STUDIO TELEMETRY FIELD GUIDE // OPERATING INSTRUCTIONS
+          </div>
+          <h1 style="font-size: 30pt; letter-spacing: -0.025em; color: var(--foam); line-height: 1.05; margin-bottom: 2mm;">
+            ATELIER <span class="serif-italic" style="color: var(--caramel); font-weight: 300;">//</span> PRESENCE
+          </h1>
+          <div style="font-family: var(--font-serif); font-size: 10.5pt; font-style: italic; color: var(--crema); max-width: 520px; line-height: 1.35; margin: 0 auto;">
+            A Step-by-Step Operator Guide to Privacy-Preserving Attendance Verification, Voice Frequency Analysis &amp; 1-Click CSV Export
+          </div>
+        </div>
+
+        <!-- 3-Minute Quick-Start Flowchart SVG -->
+        <div style="background-color: #241713; border: 1px solid var(--roast); border-radius: 3px; padding: 3mm; margin-top: 3mm;">
+          <div style="font-family: var(--font-mono); font-size: 6.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--caramel); margin-bottom: 2mm; text-align: center;">
+            3-MINUTE QUICK-START CHECKLIST FOR SEMINAR OPERATORS &amp; EVALUATORS
+          </div>
+          <svg viewBox="0 0 700 95" class="svg-diagram" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Step 1 -->
+            <rect x="5" y="10" width="125" height="75" rx="3" fill="#1C1310" stroke="#B8772F" stroke-width="1.2"/>
+            <circle cx="22" cy="25" r="9" fill="#B8772F"/>
+            <text x="22" y="28.5" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7" font-weight="bold" fill="#1C1310">1</text>
+            <text x="36" y="27" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="bold" fill="#FAF6EE">START RIG</text>
+            <text x="14" y="46" font-family="'Instrument Sans', sans-serif" font-size="6.8" fill="#EBDCC2">Run run_app.bat</text>
+            <text x="14" y="58" font-family="'Instrument Sans', sans-serif" font-size="6.8" fill="#D2AE82">Launches backend</text>
+            <text x="14" y="70" font-family="'JetBrains Mono', monospace" font-size="6.2" fill="#B8772F">Port 8000 &bull; 5173</text>
+
+            <path d="M 135 48 L 149 48" stroke="#B8772F" stroke-width="1.5" stroke-dasharray="2 2"/>
+            <polygon points="149,45 155,48 149,51" fill="#B8772F"/>
+
+            <!-- Step 2 -->
+            <rect x="160" y="10" width="125" height="75" rx="3" fill="#1C1310" stroke="#3A2619" stroke-width="1"/>
+            <circle cx="177" cy="25" r="9" fill="#3A2619" stroke="#B8772F" stroke-width="1"/>
+            <text x="177" y="28.5" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7" font-weight="bold" fill="#B8772F">2</text>
+            <text x="191" y="27" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="bold" fill="#FAF6EE">OPEN CHROME</text>
+            <text x="169" y="46" font-family="'Instrument Sans', sans-serif" font-size="6.8" fill="#EBDCC2">Visit Web Client</text>
+            <text x="169" y="58" font-family="'JetBrains Mono', monospace" font-size="6.2" fill="#D2AE82">localhost:5173</text>
+            <text x="169" y="70" font-family="'Instrument Sans', sans-serif" font-size="6.5" fill="#EBDCC2">Scroll to Telemetry</text>
+
+            <path d="M 290 48 L 304 48" stroke="#B8772F" stroke-width="1.5" stroke-dasharray="2 2"/>
+            <polygon points="304,45 310,48 304,51" fill="#B8772F"/>
+
+            <!-- Step 3 -->
+            <rect x="315" y="10" width="125" height="75" rx="3" fill="#1C1310" stroke="#B8772F" stroke-width="1.2"/>
+            <circle cx="332" cy="25" r="9" fill="#B8772F"/>
+            <text x="332" y="28.5" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7" font-weight="bold" fill="#1C1310">3</text>
+            <text x="346" y="27" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="bold" fill="#FAF6EE">CLICK INIT</text>
+            <text x="324" y="46" font-family="'Instrument Sans', sans-serif" font-size="6.8" fill="#EBDCC2">[Init Camera &amp; Mic]</text>
+            <text x="324" y="58" font-family="'Instrument Sans', sans-serif" font-size="6.8" fill="#D2AE82">Click "Allow" prompt</text>
+            <text x="324" y="70" font-family="'Instrument Sans', sans-serif" font-size="6.5" fill="#FAF6EE">(Or use Simulation)</text>
+
+            <path d="M 445 48 L 459 48" stroke="#B8772F" stroke-width="1.5" stroke-dasharray="2 2"/>
+            <polygon points="459,45 465,48 459,51" fill="#B8772F"/>
+
+            <!-- Step 4 -->
+            <rect x="470" y="10" width="125" height="75" rx="3" fill="#1C1310" stroke="#3A2619" stroke-width="1"/>
+            <circle cx="487" cy="25" r="9" fill="#3A2619" stroke="#B8772F" stroke-width="1"/>
+            <text x="487" y="28.5" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7" font-weight="bold" fill="#B8772F">4</text>
+            <text x="501" y="27" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="bold" fill="#FAF6EE">VERIFY 10s</text>
+            <text x="479" y="46" font-family="'Instrument Sans', sans-serif" font-size="6.8" fill="#EBDCC2">Sit before camera</text>
+            <text x="479" y="58" font-family="'Instrument Sans', sans-serif" font-size="6.8" fill="#D2AE82">10.0s verification</text>
+            <text x="479" y="70" font-family="'JetBrains Mono', monospace" font-size="6.2" fill="#B8772F">&check; Verified Present</text>
+
+            <path d="M 600 48 L 614 48" stroke="#B8772F" stroke-width="1.5" stroke-dasharray="2 2"/>
+            <polygon points="614,45 620,48 614,51" fill="#B8772F"/>
+
+            <!-- Step 5 -->
+            <rect x="625" y="10" width="70" height="75" rx="3" fill="#1C1310" stroke="#B8772F" stroke-width="1.2"/>
+            <circle cx="642" cy="25" r="9" fill="#B8772F"/>
+            <text x="642" y="28.5" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7" font-weight="bold" fill="#1C1310">5</text>
+            <text x="632" y="46" font-family="'JetBrains Mono', monospace" font-size="6.5" font-weight="bold" fill="#FAF6EE">CSV</text>
+            <text x="632" y="58" font-family="'Instrument Sans', sans-serif" font-size="6.5" fill="#EBDCC2">1-Click</text>
+            <text x="632" y="70" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#B8772F">Export</text>
+          </svg>
+        </div>
+
+        <div class="grid-2" style="margin-top: 3.5mm;">
+          
+          <div class="card-dark" style="border-left: 3px solid var(--caramel); background-color: #241713;">
+            <div class="card-title-mono" style="color: var(--caramel); margin-bottom: 2mm;">
+              <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--caramel);"></span>
+              RIG OPERATIONAL CAPABILITIES
+            </div>
+            <table class="dark-table">
+              <tr><td style="width: 38%; font-weight: 600; color: var(--crema);">Video Acquisition</td><td>640&times;480 @ 30 FPS RGB via WebRTC MediaStream</td></tr>
+              <tr><td style="font-weight: 600; color: var(--crema);">Face Tracking</td><td>Local Euclidean Centroid Matcher (No Cloud Biometrics)</td></tr>
+              <tr><td style="font-weight: 600; color: var(--crema);">Audio Equalizer</td><td>16-Band Analog Spectrum Visualizer (32Hz &ndash; 16kHz)</td></tr>
+              <tr><td style="font-weight: 600; color: var(--crema);">Classroom Demo</td><td>Built-in Room 402 Synthetic Cohort Simulation Mode</td></tr>
+              <tr><td style="font-weight: 600; color: var(--crema);">Data Export</td><td>Instant UTF-8 CSV Ledger download via Pandas DataFrame</td></tr>
+            </table>
+          </div>
+
+          <div class="card-dark" style="border-left: 3px solid var(--latte); background-color: #241713;">
+            <div class="card-title-mono" style="color: var(--latte); margin-bottom: 2mm;">
+              <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--latte);"></span>
+              DOCUMENTATION ITINERARY
+            </div>
+            <table class="dark-table">
+              <tr><td style="width: 24%; font-weight: 600; color: var(--caramel);">PAGE 02</td><td>Milestone 01: Initializing Hardware Camera &amp; Mic</td></tr>
+              <tr><td style="font-weight: 600; color: var(--caramel);">PAGE 03</td><td>Milestone 02: Face Tracking &amp; The 10-Second Rule</td></tr>
+              <tr><td style="font-weight: 600; color: var(--caramel);">PAGE 04</td><td>Milestone 03: Voice Frequency &amp; 16-Band Equalizer</td></tr>
+              <tr><td style="font-weight: 600; color: var(--caramel);">PAGE 05</td><td>Milestone 04: Classroom Simulation (No Webcam)</td></tr>
+              <tr><td style="font-weight: 600; color: var(--caramel);">PAGE 06</td><td>Milestone 05: Calibration Sliders &amp; CSV Export</td></tr>
+              <tr><td style="font-weight: 600; color: var(--caramel);">PAGE 07</td><td>Milestone 06: Troubleshooting, Shortcuts &amp; FAQ</td></tr>
+            </table>
+          </div>
+
+        </div>
+
+        <div style="display: flex; justify-content: center; gap: 8px; margin-top: 3.5mm; flex-wrap: wrap;">
+          <span class="pill caramel">100% IN-MEMORY TELEMETRY</span>
+          <span class="pill">CHROME &bull; EDGE &bull; BRAVE COMPATIBLE</span>
+          <span class="pill">ZERO BIOMETRIC SAVES</span>
+          <span class="pill">INSTANT CSV AUDIT</span>
+          <span class="pill caramel">NO SENSORY DATA LEAVES DEVICE</span>
+        </div>
+      </div>
+
+      <div class="running-footer">
+        <span>ATELIER OPERATIONAL PAPERS // COMPENDIUM 043-O</span>
+        <span>FIELD DISPATCH // OPEN TELEMETRY STANDARD</span>
+        <span class="folio-pill">PAGE 01 OF 07</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       PAGE 2: MILESTONE 01: INITIALIZING HARDWARE CAMERA & MIC
+       ======================================================================== -->
+  <div class="page" id="guide-page-2">
+    <div class="content-wrap">
+      
+      <div class="running-header">
+        <span>ATELIER // PRESENCE &bull; OPERATOR MANUAL</span>
+        <span class="doc-id">MILESTONE 01: HARDWARE INITIALIZATION</span>
+        <span>PAGE 02</span>
+      </div>
+
+      <div class="page-title-block">
+        <div class="page-num-label">OPERATIONAL MILESTONE 01</div>
+        <h2 class="page-heading">01 / Initializing Hardware Camera &amp; Mic</h2>
+        <div class="page-subheading">
+          Connecting your local webcam and microphone to the high-performance local processing pipeline.
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-bottom: 2.2mm;">
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">
+            <span class="step-num">1</span> Click Initialize
+          </div>
+          <p>Navigate to Section 03 (Live Telemetry Desk) and click the glowing button <strong style="color: var(--espresso);">[Initialize Local Camera &amp; Mic]</strong>.</p>
+        </div>
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">
+            <span class="step-num">2</span> Grant Browser Prompt
+          </div>
+          <p>In Chrome's top-left security popup, click <strong style="color: var(--espresso);">"Allow"</strong>. Video is kept in RAM and discarded every 100ms.</p>
+        </div>
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">
+            <span class="step-num">3</span> Check Telemetry Strip
+          </div>
+          <p>Confirm the telemetry ribbon turns green: displays camera name, <strong style="color: var(--espresso);">640&times;480 @ 30 FPS</strong>, and live microphone decibels.</p>
+        </div>
+      </div>
+
+      <!-- Intuitive UI Walkthrough Infographic -->
+      <div class="figure-frame">
+        <svg viewBox="0 0 760 215" class="svg-diagram" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Step 1 Box: Action Button in UI -->
+          <g transform="translate(10, 10)">
+            <rect x="0" y="0" width="220" height="195" rx="3" fill="#FAF6EE" stroke="#D8C3AC" stroke-width="1"/>
+            <rect x="0" y="0" width="220" height="26" fill="#EBDCC2"/>
+            <text x="12" y="17" font-family="'JetBrains Mono', monospace" font-size="7.5" font-weight="bold" fill="#1C1310">STEP 1: CLICK ACTION BUTTON</text>
+
+            <rect x="15" y="42" width="190" height="34" rx="3" fill="#B8772F" stroke="#3A2619" stroke-width="1"/>
+            <circle cx="32" cy="59" r="4.5" fill="#FAF6EE"/>
+            <text x="44" y="62.5" font-family="'JetBrains Mono', monospace" font-size="7.2" font-weight="bold" fill="#1C1310">Initialize Local Camera &amp; Mic</text>
+
+            <text x="15" y="98" font-family="'Instrument Sans', sans-serif" font-size="7.5" fill="#3A2619">Located on the left side of Section 03.</text>
+            <text x="15" y="112" font-family="'Instrument Sans', sans-serif" font-size="7.5" fill="#3A2619">Triggers WebRTC permission handshake.</text>
+
+            <rect x="15" y="130" width="190" height="48" rx="2" fill="#F4EDE2" stroke="#D8C3AC" stroke-width="0.8"/>
+            <text x="22" y="145" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="bold" fill="#B8772F">OPTIONAL PRIVACY TOGGLE:</text>
+            <text x="22" y="159" font-family="'Instrument Sans', sans-serif" font-size="7" fill="#6B4630">Click [Mute Mic] anytime to stop</text>
+            <text x="22" y="171" font-family="'Instrument Sans', sans-serif" font-size="7" fill="#6B4630">audio analysis without pausing camera.</text>
+          </g>
+
+          <!-- Arrow 1 to 2 -->
+          <path d="M 238 105 L 260 105" stroke="#B8772F" stroke-width="2"/>
+          <polygon points="260,101 267,105 260,109" fill="#B8772F"/>
+
+          <!-- Step 2 Box: Chrome Permission Prompt -->
+          <g transform="translate(275, 10)">
+            <rect x="0" y="0" width="220" height="195" rx="3" fill="#FAF6EE" stroke="#D8C3AC" stroke-width="1"/>
+            <rect x="0" y="0" width="220" height="26" fill="#EBDCC2"/>
+            <text x="12" y="17" font-family="'JetBrains Mono', monospace" font-size="7.5" font-weight="bold" fill="#1C1310">STEP 2: CHROME PERMISSION</text>
+
+            <!-- Chrome Address Bar & Popup -->
+            <rect x="12" y="38" width="196" height="24" rx="2" fill="#EBDCC2" stroke="#D8C3AC" stroke-width="0.8"/>
+            <circle cx="24" cy="50" r="5" fill="#3F624D"/>
+            <text x="35" y="53.5" font-family="'JetBrains Mono', monospace" font-size="7" fill="#1C1310">https://localhost:5173</text>
+
+            <rect x="12" y="70" width="196" height="110" rx="3" fill="#FFFFFF" stroke="#B8772F" stroke-width="1.2"/>
+            <text x="22" y="87" font-family="'Instrument Sans', sans-serif" font-size="7.5" font-weight="bold" fill="#1C1310">localhost:5173 wants to:</text>
+            <text x="30" y="103" font-family="'Instrument Sans', sans-serif" font-size="7.2" fill="#3A2619">&bull; Use your camera</text>
+            <text x="30" y="117" font-family="'Instrument Sans', sans-serif" font-size="7.2" fill="#3A2619">&bull; Use your microphone</text>
+
+            <rect x="22" y="132" width="75" height="24" rx="2" fill="#F4EDE2" stroke="#D8C3AC" stroke-width="1"/>
+            <text x="44" y="147" font-family="'Instrument Sans', sans-serif" font-size="7.2" fill="#6B4630">Block</text>
+
+            <rect x="108" y="132" width="90" height="24" rx="2" fill="#B8772F" stroke="#3A2619" stroke-width="1"/>
+            <text x="141" y="147" font-family="'Instrument Sans', sans-serif" font-size="7.5" font-weight="bold" fill="#1C1310">Allow</text>
+
+            <!-- Hand cursor pointing to Allow -->
+            <path d="M 165 160 L 165 142" stroke="#1C1310" stroke-width="2"/>
+            <polygon points="161,145 165,138 169,145" fill="#1C1310"/>
+            <text x="110" y="172" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="bold" fill="#3F624D">&larr; CLICK "ALLOW"</text>
+          </g>
+
+          <!-- Arrow 2 to 3 -->
+          <path d="M 503 105 L 525 105" stroke="#B8772F" stroke-width="2"/>
+          <polygon points="525,101 532,105 525,109" fill="#B8772F"/>
+
+          <!-- Step 3 Box: Live Viewfinder Activated -->
+          <g transform="translate(540, 10)">
+            <rect x="0" y="0" width="210" height="195" rx="3" fill="#1C1310" stroke="#3A2619" stroke-width="1"/>
+            <rect x="0" y="0" width="210" height="24" fill="#251713"/>
+            <circle cx="12" cy="12" r="3.5" fill="#3F624D"/>
+            <text x="20" y="15" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="bold" fill="#FAF6EE">HARDWARE TELEMETRY LIVE</text>
+
+            <!-- Video Viewfinder Frame -->
+            <rect x="10" y="32" width="190" height="105" fill="#251713" stroke="#6B4630" stroke-width="0.8"/>
+            
+            <!-- Face Bounding Box with Caramel Brackets -->
+            <rect x="65" y="45" width="80" height="75" stroke="#B8772F" stroke-width="1.4" stroke-dasharray="4 2" fill="none"/>
+            <circle cx="105" cy="82" r="2.5" fill="#B8772F"/>
+            <text x="65" y="41" font-family="'JetBrains Mono', monospace" font-size="6.2" font-weight="bold" fill="#B8772F">Participant_01</text>
+            <text x="65" y="129" font-family="'JetBrains Mono', monospace" font-size="5.8" fill="#D2AE82">Verifying... 4.2s</text>
+
+            <!-- Live Status Banner Under Video -->
+            <rect x="10" y="145" width="190" height="42" rx="2" fill="#251713" stroke="#3A2619" stroke-width="1"/>
+            <text x="16" y="158" font-family="'JetBrains Mono', monospace" font-size="6.2" fill="#D2AE82">CAMERA: 640&times;480 @ 30 FPS</text>
+            <text x="16" y="169" font-family="'JetBrains Mono', monospace" font-size="6.2" fill="#3F624D">&bull; MIC LIVE: -24.2 dBFS (VAD ACTIVE)</text>
+            <text x="16" y="180" font-family="'JetBrains Mono', monospace" font-size="6.2" fill="#B8772F">&bull; WEBSOCKET: 16ms RTT (HEALTHY)</text>
+          </g>
+        </svg>
+        <div class="figure-caption">FIGURE 1.1: STEP-BY-STEP CAMERA &amp; MICROPHONE INITIALIZATION HANDSHAKE</div>
+      </div>
+
+      <!-- Operational Tips Callout Grid -->
+      <div class="grid-2" style="margin-top: 1mm;">
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">Operator Verification Checklist</div>
+          <ul style="margin-left: 4mm; font-size: 7.5pt; color: var(--roast); line-height: 1.45;">
+            <li><strong>Browser Compatibility:</strong> Use Chrome, Edge, Brave, or Chromium 110+.</li>
+            <li><strong>Lighting Advice:</strong> Front-facing natural or studio light ensures instant OpenCV Haar Cascade detection without false shadow drops.</li>
+            <li><strong>Privacy Mute:</strong> Clicking <code>[Mute Mic]</code> instantly suspends audio PCM streaming while keeping visual presence tracking fully active.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">Zero Cloud Biometric Storage</div>
+          <p style="margin-bottom: 2mm;">Atelier does <strong>not</strong> save, record, or upload camera frames. Each frame is downsampled client-side to 640&times;480, decoded into temporary NumPy arrays in server RAM, evaluated for presence, and purged within 100 milliseconds.</p>
+          <div style="display: flex; gap: 6px;">
+            <span class="pill green">ZERO DISK WRITES</span>
+            <span class="pill caramel">LOCAL PROCESSING</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="running-footer">
+        <span>ATELIER OPERATIONAL PAPERS // COMPENDIUM 043-O</span>
+        <span>SECTION 01: HARDWARE INITIALIZATION</span>
+        <span class="folio-pill">PAGE 02 OF 07</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       PAGE 3: MILESTONE 02: FACE TRACKING & THE 10-SECOND RULE
+       ======================================================================== -->
+  <div class="page" id="guide-page-3">
+    <div class="content-wrap">
+      
+      <div class="running-header">
+        <span>ATELIER // PRESENCE &bull; OPERATOR MANUAL</span>
+        <span class="doc-id">MILESTONE 02: CENTROID TRACKING</span>
+        <span>PAGE 03</span>
+      </div>
+
+      <div class="page-title-block">
+        <div class="page-num-label">OPERATIONAL MILESTONE 02</div>
+        <h2 class="page-heading">02 / Face Tracking &amp; The 10-Second Attendance Rule</h2>
+        <div class="page-subheading">
+          How the 10-second presence filter prevents hallway passersby from triggering false attendance logs.
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-bottom: 2.2mm;">
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">Stage 1: Transient Walk-by</div>
+          <p>Passerby crosses the room for under 3.0 seconds. Flagged as <strong style="color: var(--roast);">Transient (&lt;3s)</strong>. Never written to the database.</p>
+        </div>
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">Stage 2: Verification (3s&ndash;10s)</div>
+          <p>Student sits at seminar desk. Live counter updates: <strong style="color: var(--caramel);">Verifying... 4.5s / 10.0s</strong> with warm latte drafting brackets.</p>
+        </div>
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--accent-green);">Stage 3: Verified Present (&ge;10s)</div>
+          <p>At 10.0 seconds, drafting brackets turn caramel. <strong style="color: var(--accent-green);">&check; Verified Present</strong> commits automatically to SQLite WAL.</p>
+        </div>
+      </div>
+
+      <!-- Human-Friendly Flowchart: Walk-by vs Genuine Student -->
+      <div class="figure-frame">
+        <svg viewBox="0 0 760 175" class="svg-diagram" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Background Split Line -->
+          <line x1="20" y1="85" x2="740" y2="85" stroke="#D8C3AC" stroke-width="1" stroke-dasharray="3 3"/>
+
+          <!-- SCENARIO A: CASUAL WALK-BY -->
+          <g transform="translate(20, 10)">
+            <rect x="0" y="0" width="160" height="65" rx="3" fill="#FAF6EE" stroke="#D8C3AC" stroke-width="1"/>
+            <text x="12" y="18" font-family="'JetBrains Mono', monospace" font-size="7" font-weight="bold" fill="#6B4630">SCENARIO A: DOORWAY PASSERBY</text>
+            <text x="12" y="33" font-family="'Instrument Sans', sans-serif" font-size="7.5" fill="#1C1310">Walks past camera for 2.4s</text>
+            <text x="12" y="47" font-family="'JetBrains Mono', monospace" font-size="6.8" fill="#6B4630">Status: Transient (&lt;3s)</text>
+            <text x="12" y="58" font-family="'Instrument Sans', sans-serif" font-size="6.5" fill="#3A2619">Ignored after exit</text>
+
+            <path d="M 170 32 L 230 32" stroke="#6B4630" stroke-width="1.5" stroke-dasharray="2 2"/>
+            <polygon points="230,29 237,32 230,35" fill="#6B4630"/>
+
+            <rect x="245" y="8" width="190" height="50" rx="3" fill="#FAF6EE" stroke="#6B4630" stroke-width="1"/>
+            <text x="257" y="27" font-family="'JetBrains Mono', monospace" font-size="7.2" font-weight="bold" fill="#6B4630">&cross; ZERO ATTENDANCE LOGGED</text>
+            <text x="257" y="43" font-family="'Instrument Sans', sans-serif" font-size="7.2" fill="#3A2619">Coordinates deleted from memory.</text>
+            <text x="257" y="53" font-family="'Instrument Sans', sans-serif" font-size="7" fill="#6B4630">No entry made to SQLite database.</text>
+
+            <rect x="450" y="8" width="280" height="50" rx="3" fill="#F4EDE2" stroke="#D8C3AC" stroke-width="0.8"/>
+            <text x="462" y="27" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="bold" fill="#3A2619">WHY THIS MATTERS:</text>
+            <text x="462" y="41" font-family="'Instrument Sans', sans-serif" font-size="7.2" fill="#6B4630">Prevents delivery couriers, cleaners, and hallway</text>
+            <text x="462" y="52" font-family="'Instrument Sans', sans-serif" font-size="7.2" fill="#6B4630">passersby from polluting official attendance rosters.</text>
+          </g>
+
+          <!-- SCENARIO B: GENUINE SEMINAR STUDENT -->
+          <g transform="translate(20, 95)">
+            <rect x="0" y="0" width="160" height="68" rx="3" fill="#FAF6EE" stroke="#B8772F" stroke-width="1.2"/>
+            <text x="12" y="18" font-family="'JetBrains Mono', monospace" font-size="7" font-weight="bold" fill="#B8772F">SCENARIO B: SEATED STUDENT</text>
+            <text x="12" y="33" font-family="'Instrument Sans', sans-serif" font-size="7.5" fill="#1C1310">Student sits down at desk</text>
+            <text x="12" y="47" font-family="'JetBrains Mono', monospace" font-size="6.8" fill="#3A2619">Timer: 0.0s &rarr; 10.0s</text>
+            <text x="12" y="60" font-family="'JetBrains Mono', monospace" font-size="6.5" fill="#B8772F">Verifying Countdown...</text>
+
+            <path d="M 170 34 L 230 34" stroke="#B8772F" stroke-width="2"/>
+            <polygon points="230,30 238,34 230,38" fill="#B8772F"/>
+
+            <rect x="245" y="8" width="190" height="52" rx="3" fill="#FAF6EE" stroke="#3F624D" stroke-width="1.4"/>
+            <text x="257" y="27" font-family="'JetBrains Mono', monospace" font-size="7.5" font-weight="bold" fill="#3F624D">&check; 10.0s MILESTONE ACHIEVED</text>
+            <text x="257" y="42" font-family="'Instrument Sans', sans-serif" font-size="7.2" fill="#1C1310">Status: Verified Present</text>
+            <text x="257" y="53" font-family="'JetBrains Mono', monospace" font-size="6.5" fill="#B8772F">Committed to SQLite WAL</text>
+
+            <path d="M 445 34 L 465 34" stroke="#3F624D" stroke-width="2"/>
+            <polygon points="465,30 472,34 465,38" fill="#3F624D"/>
+
+            <rect x="480" y="8" width="250" height="52" rx="3" fill="#FAF6EE" stroke="#B8772F" stroke-width="1"/>
+            <text x="492" y="25" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="bold" fill="#1C1310">LIVE ATTENDANCE LEDGER</text>
+            <text x="492" y="39" font-family="'JetBrains Mono', monospace" font-size="6.5" fill="#3F624D">&bull; Elena Rostova &bull; Verified (10.4s)</text>
+            <text x="492" y="51" font-family="'Instrument Sans', sans-serif" font-size="6.8" fill="#6B4630">Appears immediately in Tab [B] Ledger below.</text>
+          </g>
+        </svg>
+        <div class="figure-caption">FIGURE 2.1: SUSTAINED ATTENDANCE TIMELINE &amp; TRANSIENT WALK-BY REJECTION FILTER</div>
+      </div>
+
+      <!-- Live Attendance Ledger Preview Table (High Contrast) -->
+      <div class="card" style="padding: 2.8mm 3.5mm; margin-top: 1mm;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5mm;">
+          <span style="font-family: var(--font-mono); font-size: 7.2pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--espresso);">
+            LIVE ATTENDANCE LEDGER // WHAT OPERATORS SEE ON SCREEN
+          </span>
+          <span class="pill caramel">SQLITE WAL SYNCHRONIZED</span>
+        </div>
+        <table class="clean-table">
+          <thead>
+            <tr>
+              <th>PARTICIPANT ID</th>
+              <th>FIRST SEEN</th>
+              <th>LAST SEEN</th>
+              <th>DURATION</th>
+              <th>VERIFICATION STATUS</th>
+              <th>STORAGE ENGINE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight: 600; color: var(--espresso);">Participant_01 (Elena Rostova)</td>
+              <td style="font-family: var(--font-mono);">09:00:14 UTC</td>
+              <td style="font-family: var(--font-mono);">09:41:22 UTC</td>
+              <td style="font-family: var(--font-mono); font-weight: 700; color: var(--caramel);">41m 08s</td>
+              <td><span class="pill green">&check; VERIFIED PRESENT</span></td>
+              <td style="font-family: var(--font-mono); color: var(--mocha);">SQLite WAL Mode</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 600; color: var(--espresso);">Participant_02 (Julian Sterling)</td>
+              <td style="font-family: var(--font-mono);">09:02:40 UTC</td>
+              <td style="font-family: var(--font-mono);">09:41:22 UTC</td>
+              <td style="font-family: var(--font-mono); font-weight: 700; color: var(--caramel);">38m 42s</td>
+              <td><span class="pill green">&check; VERIFIED PRESENT</span></td>
+              <td style="font-family: var(--font-mono); color: var(--mocha);">SQLite WAL Mode</td>
+            </tr>
+            <tr>
+              <td style="color: var(--mocha);">Participant_04 (Hallway Passerby)</td>
+              <td style="font-family: var(--font-mono);">09:14:02 UTC</td>
+              <td style="font-family: var(--font-mono);">09:14:04 UTC</td>
+              <td style="font-family: var(--font-mono); color: var(--mocha);">2.4s</td>
+              <td><span class="pill">TRANSIENT (&lt;3s)</span></td>
+              <td style="font-family: var(--font-mono); color: var(--mocha);">Ephemeral (Discarded)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="running-footer">
+        <span>ATELIER OPERATIONAL PAPERS // COMPENDIUM 043-O</span>
+        <span>SECTION 02: 10-SECOND VERIFICATION RULE</span>
+        <span class="folio-pill">PAGE 03 OF 07</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       PAGE 4: MILESTONE 03: VOICE FREQUENCY & 16-BAND EQUALIZER
+       ======================================================================== -->
+  <div class="page" id="guide-page-4">
+    <div class="content-wrap">
+      
+      <div class="running-header">
+        <span>ATELIER // PRESENCE &bull; OPERATOR MANUAL</span>
+        <span class="doc-id">MILESTONE 03: VOICE FREQUENCY EQUALIZER</span>
+        <span>PAGE 04</span>
+      </div>
+
+      <div class="page-title-block">
+        <div class="page-num-label">OPERATIONAL MILESTONE 03</div>
+        <h2 class="page-heading">03 / Voice Frequency &amp; The 16-Band Analog Spectrum Visualizer</h2>
+        <div class="page-subheading">
+          Understanding the studio audio equalizer and how human speech is isolated from ambient room noise.
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-bottom: 2.2mm;">
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">Zone A: HVAC Rumble</div>
+          <p>32Hz to 125Hz bins. Captures air conditioning hum and building vibration. <strong style="color: var(--roast);">Filtered out</strong> so it never falsely triggers voice.</p>
+        </div>
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">Zone B: Spoken Voice</div>
+          <p>300Hz to 3400Hz speech formant. Central bars <strong style="color: var(--caramel);">light up caramel and crema</strong> when students or instructors speak.</p>
+        </div>
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">Zone C: Desk Clicks</div>
+          <p>4kHz to 16kHz high treble. Captures typing, shuffling, and pencil scratches. <strong style="color: var(--roast);">Filtered out</strong> from speech calculations.</p>
+        </div>
+      </div>
+
+      <!-- Annotated 16-Band Studio Spectrum Visualizer Diagram -->
+      <div class="figure-frame">
+        <svg viewBox="0 0 760 170" class="svg-diagram" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Background Chassis of Equalizer -->
+          <rect x="10" y="10" width="740" height="150" rx="3" fill="#1C1310" stroke="#3A2619" stroke-width="1.2"/>
+          
+          <!-- Decibel Grid Lines -->
+          <line x1="30" y1="35" x2="720" y2="35" stroke="#3A2619" stroke-width="0.8" stroke-dasharray="2 3"/>
+          <text x="725" y="38" font-family="'JetBrains Mono', monospace" font-size="6" fill="#B8772F">0 dB</text>
+          <line x1="30" y1="70" x2="720" y2="70" stroke="#3A2619" stroke-width="0.8" stroke-dasharray="2 3"/>
+          <text x="725" y="73" font-family="'JetBrains Mono', monospace" font-size="6" fill="#D2AE82">-12 dB</text>
+          <line x1="30" y1="105" x2="720" y2="105" stroke="#3A2619" stroke-width="0.8" stroke-dasharray="2 3"/>
+          <text x="725" y="108" font-family="'JetBrains Mono', monospace" font-size="6" fill="#6B4630">-24 dB</text>
+          <line x1="30" y1="130" x2="720" y2="130" stroke="#3A2619" stroke-width="0.8" stroke-dasharray="2 3"/>
+          <text x="725" y="133" font-family="'JetBrains Mono', monospace" font-size="6" fill="#3A2619">-42 dB</text>
+
+          <!-- Zone A Highlight Bracket (Bins 0-3: 32Hz-250Hz) -->
+          <rect x="40" y="20" width="160" height="115" fill="#3A2619" fill-opacity="0.15" stroke="#6B4630" stroke-width="0.8" stroke-dasharray="2 2"/>
+          <text x="120" y="30" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.5" fill="#D2AE82">ZONE A: HVAC / BASS (FILTERED)</text>
+
+          <!-- Zone B Highlight Bracket (Bins 4-9: 300Hz-3.4kHz SPEECH FORMANT) -->
+          <rect x="210" y="16" width="280" height="122" fill="#B8772F" fill-opacity="0.12" stroke="#B8772F" stroke-width="1.2"/>
+          <text x="350" y="28" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7" font-weight="bold" fill="#B8772F">&starf; ZONE B: HUMAN SPEECH FORMANT (300Hz &ndash; 3400Hz)</text>
+
+          <!-- Zone C Highlight Bracket (Bins 10-15: 4kHz-16kHz) -->
+          <rect x="500" y="20" width="215" height="115" fill="#3A2619" fill-opacity="0.15" stroke="#6B4630" stroke-width="0.8" stroke-dasharray="2 2"/>
+          <text x="607" y="30" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.5" fill="#D2AE82">ZONE C: KEYBOARD / TREBLE</text>
+
+          <!-- 16 Frequency Bars -->
+          <!-- Col 0: 32Hz -->
+          <rect x="52" y="115" width="20" height="15" fill="#6B4630"/>
+          <text x="62" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" fill="#6B4630">32</text>
+          <!-- Col 1: 64Hz -->
+          <rect x="88" y="110" width="20" height="20" fill="#6B4630"/>
+          <text x="98" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" fill="#6B4630">64</text>
+          <!-- Col 2: 125Hz -->
+          <rect x="124" y="100" width="20" height="30" fill="#6B4630"/>
+          <text x="134" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" fill="#6B4630">125</text>
+          <!-- Col 3: 250Hz -->
+          <rect x="160" y="90" width="20" height="40" fill="#D2AE82"/>
+          <text x="170" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" fill="#D2AE82">250</text>
+
+          <!-- Col 4: 500Hz (SPEECH ACTIVE) -->
+          <rect x="225" y="55" width="20" height="75" fill="#B8772F"/>
+          <text x="235" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" font-weight="bold" fill="#B8772F">500</text>
+          <!-- Col 5: 800Hz (SPEECH ACTIVE) -->
+          <rect x="268" y="38" width="20" height="92" fill="#FAF6EE"/>
+          <rect x="268" y="42" width="20" height="88" fill="#B8772F"/>
+          <text x="278" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" font-weight="bold" fill="#B8772F">800</text>
+          <!-- Col 6: 1.0k (SPEECH ACTIVE) -->
+          <rect x="311" y="32" width="20" height="98" fill="#FAF6EE"/>
+          <rect x="311" y="38" width="20" height="92" fill="#B8772F"/>
+          <text x="321" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" font-weight="bold" fill="#B8772F">1.0k</text>
+          <!-- Col 7: 1.6k (SPEECH ACTIVE) -->
+          <rect x="354" y="42" width="20" height="88" fill="#B8772F"/>
+          <text x="364" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" font-weight="bold" fill="#B8772F">1.6k</text>
+          <!-- Col 8: 2.5k (SPEECH ACTIVE) -->
+          <rect x="397" y="60" width="20" height="70" fill="#B8772F"/>
+          <text x="407" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" font-weight="bold" fill="#B8772F">2.5k</text>
+          <!-- Col 9: 3.4k (SPEECH ACTIVE) -->
+          <rect x="440" y="80" width="20" height="50" fill="#D2AE82"/>
+          <text x="450" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" font-weight="bold" fill="#B8772F">3.4k</text>
+
+          <!-- Col 10: 5.0k -->
+          <rect x="515" y="105" width="20" height="25" fill="#6B4630"/>
+          <text x="525" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" fill="#6B4630">5k</text>
+          <!-- Col 11: 7.0k -->
+          <rect x="552" y="112" width="20" height="18" fill="#6B4630"/>
+          <text x="562" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" fill="#6B4630">7k</text>
+          <!-- Col 12: 10k -->
+          <rect x="589" y="118" width="20" height="12" fill="#6B4630"/>
+          <text x="599" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" fill="#6B4630">10k</text>
+          <!-- Col 13: 12k -->
+          <rect x="626" y="120" width="20" height="10" fill="#6B4630"/>
+          <text x="636" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" fill="#6B4630">12k</text>
+          <!-- Col 14: 14k -->
+          <rect x="663" y="122" width="20" height="8" fill="#6B4630"/>
+          <text x="673" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" fill="#6B4630">14k</text>
+          <!-- Col 15: 16k -->
+          <rect x="690" y="124" width="16" height="6" fill="#6B4630"/>
+          <text x="698" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" fill="#6B4630">16k</text>
+        </svg>
+        <div class="figure-caption">FIGURE 3.1: 16-BAND AUDIO SPECTRUM WITH HIGHLIGHTED HUMAN SPEECH FORMANT PASSBAND</div>
+      </div>
+
+      <!-- Meter Modes & Practical Testing Grid -->
+      <div class="grid-2" style="margin-top: 1mm;">
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">Visualizer Mode Toggles</div>
+          <p style="margin-bottom: 2mm;">Operators can click the meter pill in the top-right of the visualizer to toggle ballistic physics:</p>
+          <ul style="margin-left: 4mm; font-size: 7.5pt; color: var(--roast); line-height: 1.45;">
+            <li><strong>VU Ballistic (Recommended):</strong> 300ms smoothing inertia; provides a steady, analog meter feel without jitter.</li>
+            <li><strong>Peak Hold:</strong> Latches instantaneous volume spikes for 75 frames; ideal for catching sudden questions or loud bursts.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">Quick Audio Test Procedure</div>
+          <div style="font-size: 7.5pt; color: var(--roast); line-height: 1.45;">
+            <p><strong>1. Normal Speech:</strong> Speak a sentence toward your mic. Notice Bins 4 to 9 (500Hz to 3.4kHz) immediately surge into warm caramel.</p>
+            <p style="margin-top: 1.5mm;"><strong>2. Typing Test:</strong> Tap your keyboard silently. Treble bins (Zone C) flutter faintly, but speech status remains idle (VAD = false).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="running-footer">
+        <span>ATELIER OPERATIONAL PAPERS // COMPENDIUM 043-O</span>
+        <span>SECTION 03: VOICE SPECTRUM EQUALIZER</span>
+        <span class="folio-pill">PAGE 04 OF 07</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       PAGE 5: MILESTONE 04: CLASSROOM SIMULATION (NO WEBCAM)
+       ======================================================================== -->
+  <div class="page" id="guide-page-5">
+    <div class="content-wrap">
+      
+      <div class="running-header">
+        <span>ATELIER // PRESENCE &bull; OPERATOR MANUAL</span>
+        <span class="doc-id">MILESTONE 04: CLASSROOM SIMULATION</span>
+        <span>PAGE 05</span>
+      </div>
+
+      <div class="page-title-block">
+        <div class="page-num-label">OPERATIONAL MILESTONE 04</div>
+        <h2 class="page-heading">04 / Classroom Study Simulation Mode (No Webcam Needed)</h2>
+        <div class="page-subheading">
+          How to evaluate, test, and demonstrate the entire platform using the built-in Room 402 synthetic cohort.
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-bottom: 2.2mm;">
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">Why Simulate?</div>
+          <p>Enables full evaluation in conference rooms, remote reviews, or on laptops without webcams. Generates genuine OpenCV BGR frames.</p>
+        </div>
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">Realistic Dynamics</div>
+          <p>Student avatars breathe, shift posture, glance at notes, and enter deep focus without artificial, robotic motion.</p>
+        </div>
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--accent-green);">Automated Walk-by</div>
+          <p>A background corridor passerby walks across every 26 seconds to prove the 10-second transient rejection filter.</p>
+        </div>
+      </div>
+
+      <!-- Architectural Perspective: Room 402 Simulated Studio Scene -->
+      <div class="figure-frame">
+        <svg viewBox="0 0 760 175" class="svg-diagram" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Room Background -->
+          <rect x="10" y="10" width="740" height="155" rx="3" fill="#1C1310" stroke="#3A2619" stroke-width="1.2"/>
+          
+          <!-- Back Wall Luminaire & Studio Banner -->
+          <rect x="220" y="18" width="320" height="26" fill="#251713" stroke="#6B4630" stroke-width="0.8"/>
+          <text x="380" y="34.5" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7" font-weight="bold" fill="#D2AE82">ATELIER ARCHITECTURAL STUDIO // ROOM 402 SIMULATION</text>
+
+          <!-- Corridor Doorway & Passerby (Transient Candidate) -->
+          <g transform="translate(60, 25)">
+            <rect x="0" y="0" width="80" height="60" fill="#251713" stroke="#3A2619" stroke-width="0.8"/>
+            <circle cx="40" cy="22" r="10" fill="#3A2619" stroke="#6B4630" stroke-width="1"/>
+            <path d="M 28 48 Q 40 36 52 48" stroke="#6B4630" stroke-width="1.2" fill="none"/>
+            <rect x="5" y="66" width="70" height="14" fill="#1C1310" stroke="#6B4630" stroke-width="0.8"/>
+            <text x="40" y="76" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.8" fill="#D2AE82">PASSERBY (&lt;3s)</text>
+            <text x="40" y="90" text-anchor="middle" font-family="'Instrument Sans', sans-serif" font-size="6" fill="#6B4630">Filtered Out</text>
+          </g>
+
+          <!-- Seminar Desk Surface -->
+          <line x1="20" y1="110" x2="740" y2="110" stroke="#6B4630" stroke-width="1.5"/>
+          <rect x="20" y="110" width="720" height="50" fill="#150E0C"/>
+
+          <!-- Student 1: Elena Rostova (Steady Frontal Focus) -->
+          <g transform="translate(180, 45)">
+            <circle cx="35" cy="30" r="18" fill="#3A2619" stroke="#B8772F" stroke-width="1.4"/>
+            <path d="M 8 72 Q 35 50 62 72" fill="#3A2619" stroke="#6B4630" stroke-width="1"/>
+            <rect x="8" y="5" width="54" height="52" stroke="#B8772F" stroke-width="1.2" fill="none"/>
+            <rect x="0" y="-8" width="70" height="13" fill="#B8772F"/>
+            <text x="35" y="1.5" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" font-weight="bold" fill="#1C1310">TRK-01 ELENA</text>
+            <text x="35" y="85" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" fill="#3F624D">&check; VERIFIED PRESENT</text>
+            <text x="35" y="96" text-anchor="middle" font-family="'Instrument Sans', sans-serif" font-size="6" fill="#D2AE82">Frontal Focus (94%)</text>
+          </g>
+
+          <!-- Student 2: Julian Sterling (Periodic Note-Taking Shift) -->
+          <g transform="translate(350, 48)">
+            <circle cx="35" cy="32" r="18" fill="#3A2619" stroke="#B8772F" stroke-width="1.4"/>
+            <path d="M 5 74 Q 35 52 65 74" fill="#3A2619" stroke="#6B4630" stroke-width="1"/>
+            <rect x="6" y="7" width="58" height="54" stroke="#B8772F" stroke-width="1.2" fill="none"/>
+            <!-- Open Sketchbook on Desk -->
+            <rect x="18" y="78" width="34" height="18" fill="#FAF6EE" stroke="#6B4630" stroke-width="0.8"/>
+            <line x1="35" y1="78" x2="35" y2="96" stroke="#6B4630" stroke-width="0.8"/>
+            <rect x="0" y="-8" width="70" height="13" fill="#B8772F"/>
+            <text x="35" y="1.5" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" font-weight="bold" fill="#1C1310">TRK-02 JULIAN</text>
+            <text x="35" y="107" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" fill="#B8772F">NOTE-TAKING SHIFT</text>
+            <text x="35" y="118" text-anchor="middle" font-family="'Instrument Sans', sans-serif" font-size="6" fill="#D2AE82">Flow State Protected</text>
+          </g>
+
+          <!-- Student 3: Clara Vance (Arriving Attendee &ndash; Threshold Verification) -->
+          <g transform="translate(520, 46)">
+            <circle cx="35" cy="30" r="18" fill="#3A2619" stroke="#D2AE82" stroke-width="1.2"/>
+            <path d="M 8 72 Q 35 50 62 72" fill="#3A2619" stroke="#6B4630" stroke-width="1"/>
+            <rect x="8" y="5" width="54" height="52" stroke="#D2AE82" stroke-width="1.2" stroke-dasharray="3 3" fill="none"/>
+            <rect x="0" y="-8" width="70" height="13" fill="#6B4630"/>
+            <text x="35" y="1.5" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" font-weight="bold" fill="#FAF6EE">TRK-03 CLARA</text>
+            <text x="35" y="85" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6" fill="#D2AE82">VERIFYING (7.2s)</text>
+            <text x="35" y="96" text-anchor="middle" font-family="'Instrument Sans', sans-serif" font-size="6" fill="#FAF6EE">Approaching 10s Mark</text>
+          </g>
+
+          <!-- Desk Coffee Cup with Rising Steam -->
+          <g transform="translate(650, 105)">
+            <rect x="0" y="4" width="16" height="18" rx="2" fill="#FAF6EE" stroke="#6B4630" stroke-width="0.8"/>
+            <path d="M 16 8 C 22 8 22 16 16 16" stroke="#6B4630" stroke-width="0.8" fill="none"/>
+            <path d="M 5 0 Q 9 -4 5 -8" stroke="#D2AE82" stroke-width="1" fill="none"/>
+            <path d="M 11 -2 Q 15 -6 11 -10" stroke="#D2AE82" stroke-width="1" fill="none"/>
+          </g>
+        </svg>
+        <div class="figure-caption">FIGURE 4.1: ROOM 402 SIMULATION SETUP &mdash; TEST BENCH WITHOUT PHYSICAL WEBCAM</div>
+      </div>
+
+      <!-- Operational Guidance Grid -->
+      <div class="grid-2" style="margin-top: 1mm;">
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">How to Activate Simulation</div>
+          <p style="margin-bottom: 2mm;">In Section 03 (Live Telemetry Desk), simply click the button <strong style="color: var(--espresso);">[Simulate Classroom Feed]</strong>. The camera viewfinder immediately renders Room 402, and all gauges, spectral bars, and AI pedagogical advice update dynamically.</p>
+          <div class="ui-btn-mock light-secondary">Simulate Classroom Feed</div>
+        </div>
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">Ideal Demonstration Use Cases</div>
+          <ul style="margin-left: 4mm; font-size: 7.5pt; color: var(--roast); line-height: 1.45;">
+            <li><strong>Hackathon / Project Grading:</strong> Demonstrate multi-person tracking and attendance verification without setting up multiple webcams.</li>
+            <li><strong>Acoustic Testing:</strong> Synthetic speech formants trigger VAD periodically, letting you verify that audio-visual fusion operates seamlessly.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="running-footer">
+        <span>ATELIER OPERATIONAL PAPERS // COMPENDIUM 043-O</span>
+        <span>SECTION 04: CLASSROOM SIMULATION</span>
+        <span class="folio-pill">PAGE 05 OF 07</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       PAGE 6: MILESTONE 05: CALIBRATION SLIDERS & CSV EXPORT
+       ======================================================================== -->
+  <div class="page" id="guide-page-6">
+    <div class="content-wrap">
+      
+      <div class="running-header">
+        <span>ATELIER // PRESENCE &bull; OPERATOR MANUAL</span>
+        <span class="doc-id">MILESTONE 05: CALIBRATION &amp; CSV EXPORT</span>
+        <span>PAGE 06</span>
+      </div>
+
+      <div class="page-title-block">
+        <div class="page-num-label">OPERATIONAL MILESTONE 05</div>
+        <h2 class="page-heading">05 / Engine Calibration Sliders &amp; 1-Click CSV Export</h2>
+        <div class="page-subheading">
+          Fine-tuning presence and acoustic thresholds in real time, and exporting official attendance spreadsheets.
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-bottom: 2.2mm;">
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">1. Presence Threshold</div>
+          <p>Slider range: 3s to 30s. <strong style="color: var(--espresso);">Default: 10.0s</strong>. Set to 5s for agile studio reviews, 10s for seminars, 20s for large lectures.</p>
+        </div>
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">2. Acoustic Floor dB</div>
+          <p>Slider range: -50dB to -15dB. <strong style="color: var(--espresso);">Default: -32.0dB</strong>. Set to -42dB for quiet reading rooms, -24dB for active workshops.</p>
+        </div>
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">3. AI Advice Cadence</div>
+          <p>Cadence options: 5s, 10s, 30s. <strong style="color: var(--espresso);">Default: 10.0s</strong>. Controls how often contextual pedagogical suggestions update.</p>
+        </div>
+      </div>
+
+      <!-- Annotated Calibration & CSV Export UI Diagram -->
+      <div class="figure-frame">
+        <svg viewBox="0 0 760 175" class="svg-diagram" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Left Panel: Calibration Sliders UI Mockup -->
+          <g transform="translate(15, 10)">
+            <rect x="0" y="0" width="350" height="155" rx="3" fill="#FAF6EE" stroke="#D8C3AC" stroke-width="1"/>
+            <rect x="0" y="0" width="350" height="24" fill="#EBDCC2"/>
+            <text x="12" y="16" font-family="'JetBrains Mono', monospace" font-size="7" font-weight="bold" fill="#1C1310">CALIBRATION DESK // LIVE PARAMETER TUNING</text>
+
+            <!-- Slider 1 -->
+            <text x="15" y="42" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="bold" fill="#1C1310">SUSTAINED PRESENCE THRESHOLD: 10.0 SECONDS</text>
+            <rect x="15" y="48" width="320" height="5" rx="2" fill="#EBDCC2"/>
+            <rect x="15" y="48" width="130" height="5" rx="2" fill="#B8772F"/>
+            <circle cx="145" cy="50.5" r="5" fill="#1C1310" stroke="#B8772F" stroke-width="1.5"/>
+            <text x="15" y="64" font-family="'Instrument Sans', sans-serif" font-size="6.5" fill="#6B4630">3s (Fast Critique) &bull;&bull;&bull;&bull;&bull; 10s (Seminar) &bull;&bull;&bull;&bull;&bull; 30s (Lecture)</text>
+
+            <!-- Slider 2 -->
+            <text x="15" y="84" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="bold" fill="#1C1310">ACOUSTIC VAD SENSITIVITY FLOOR: -32.0 dBFS</text>
+            <rect x="15" y="90" width="320" height="5" rx="2" fill="#EBDCC2"/>
+            <rect x="15" y="90" width="180" height="5" rx="2" fill="#B8772F"/>
+            <circle cx="195" cy="92.5" r="5" fill="#1C1310" stroke="#B8772F" stroke-width="1.5"/>
+            <text x="15" y="106" font-family="'Instrument Sans', sans-serif" font-size="6.5" fill="#6B4630">-50dB (Quiet Library) &bull;&bull;&bull;&bull;&bull; -32dB (Standard) &bull;&bull;&bull;&bull;&bull; -15dB (Noisy Studio)</text>
+
+            <!-- Commit Button -->
+            <rect x="15" y="120" width="170" height="24" rx="2" fill="#B8772F" stroke="#1C1310" stroke-width="1"/>
+            <text x="32" y="135" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="bold" fill="#1C1310">COMMIT CALIBRATION</text>
+            <text x="195" y="135" font-family="'Instrument Sans', sans-serif" font-size="6.8" fill="#3F624D">&check; Applied in RAM instantly</text>
+          </g>
+
+          <!-- Middle Arrow -->
+          <path d="M 378 85 L 398 85" stroke="#B8772F" stroke-width="2"/>
+          <polygon points="398,81 405,85 398,89" fill="#B8772F"/>
+
+          <!-- Right Panel: CSV Export Spreadsheet Mockup -->
+          <g transform="translate(415, 10)">
+            <rect x="0" y="0" width="330" height="155" rx="3" fill="#FAF6EE" stroke="#B8772F" stroke-width="1.2"/>
+            <rect x="0" y="0" width="330" height="24" fill="#B8772F"/>
+            <text x="12" y="16" font-family="'JetBrains Mono', monospace" font-size="7" font-weight="bold" fill="#1C1310">1-CLICK EXCEL / PANDAS CSV EXPORT</text>
+
+            <!-- Export Button -->
+            <rect x="15" y="34" width="220" height="24" rx="2" fill="#1C1310" stroke="#B8772F" stroke-width="1"/>
+            <text x="25" y="49" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="bold" fill="#FAF6EE">&darr; Export Attendance Ledger (.CSV)</text>
+
+            <!-- Spreadsheet Table Mockup -->
+            <rect x="15" y="68" width="300" height="74" fill="#FFFFFF" stroke="#D8C3AC" stroke-width="0.8"/>
+            
+            <!-- Table Header -->
+            <rect x="15" y="68" width="300" height="16" fill="#EBDCC2"/>
+            <text x="20" y="79" font-family="'JetBrains Mono', monospace" font-size="5.8" font-weight="bold" fill="#1C1310">session_id</text>
+            <text x="95" y="79" font-family="'JetBrains Mono', monospace" font-size="5.8" font-weight="bold" fill="#1C1310">participant_id</text>
+            <text x="180" y="79" font-family="'JetBrains Mono', monospace" font-size="5.8" font-weight="bold" fill="#1C1310">sustained_sec</text>
+            <text x="260" y="79" font-family="'JetBrains Mono', monospace" font-size="5.8" font-weight="bold" fill="#1C1310">status</text>
+
+            <!-- Row 1 -->
+            <text x="20" y="94" font-family="'JetBrains Mono', monospace" font-size="5.5" fill="#3A2619">Seminar_402</text>
+            <text x="95" y="94" font-family="'JetBrains Mono', monospace" font-size="5.5" fill="#3A2619">Participant_01</text>
+            <text x="180" y="94" font-family="'JetBrains Mono', monospace" font-size="5.5" font-weight="bold" fill="#B8772F">2468.2s</text>
+            <text x="260" y="94" font-family="'JetBrains Mono', monospace" font-size="5.5" font-weight="bold" fill="#3F624D">Verified</text>
+
+            <!-- Row 2 -->
+            <line x1="15" y1="102" x2="315" y2="102" stroke="#EBDCC2" stroke-width="0.8"/>
+            <text x="20" y="114" font-family="'JetBrains Mono', monospace" font-size="5.5" fill="#3A2619">Seminar_402</text>
+            <text x="95" y="114" font-family="'JetBrains Mono', monospace" font-size="5.5" fill="#3A2619">Participant_02</text>
+            <text x="180" y="114" font-family="'JetBrains Mono', monospace" font-size="5.5" font-weight="bold" fill="#B8772F">2322.0s</text>
+            <text x="260" y="114" font-family="'JetBrains Mono', monospace" font-size="5.5" font-weight="bold" fill="#3F624D">Verified</text>
+
+            <!-- Row 3 -->
+            <line x1="15" y1="122" x2="315" y2="122" stroke="#EBDCC2" stroke-width="0.8"/>
+            <text x="20" y="134" font-family="'JetBrains Mono', monospace" font-size="5.5" fill="#6B4630">Seminar_402</text>
+            <text x="95" y="134" font-family="'JetBrains Mono', monospace" font-size="5.5" fill="#6B4630">Participant_04</text>
+            <text x="180" y="134" font-family="'JetBrains Mono', monospace" font-size="5.5" fill="#6B4630">2.4s</text>
+            <text x="260" y="134" font-family="'JetBrains Mono', monospace" font-size="5.5" fill="#6B4630">Transient</text>
+          </g>
+        </svg>
+        <div class="figure-caption">FIGURE 5.1: CALIBRATION SLIDERS WORKFLOW &amp; DOWNLOADABLE PANDAS CSV SPREADSHEET</div>
+      </div>
+
+      <!-- CSV Column Schema Table -->
+      <div class="card" style="padding: 2.5mm 3.5mm; margin-top: 1mm;">
+        <span style="font-family: var(--font-mono); font-size: 7.2pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--espresso);">
+          CSV SPREADSHEET COLUMN DICTIONARY
+        </span>
+        <table class="clean-table">
+          <thead>
+            <tr>
+              <th>COLUMN</th>
+              <th>TYPE</th>
+              <th>SAMPLE VALUE</th>
+              <th>DESCRIPTION</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-family: var(--font-mono); font-weight: 700; color: var(--caramel);">session_id</td>
+              <td style="font-family: var(--font-mono);">STRING</td>
+              <td>Morning Seminar // Room 402</td>
+              <td>Classroom venue and seminar session title.</td>
+            </tr>
+            <tr>
+              <td style="font-family: var(--font-mono); font-weight: 700; color: var(--caramel);">participant_id</td>
+              <td style="font-family: var(--font-mono);">STRING</td>
+              <td>Participant_01</td>
+              <td>Local coordinate tracking token (no biometric face images).</td>
+            </tr>
+            <tr>
+              <td style="font-family: var(--font-mono); font-weight: 700; color: var(--caramel);">first_seen</td>
+              <td style="font-family: var(--font-mono);">TIMESTAMP</td>
+              <td>09:00:14 UTC</td>
+              <td>Initial arrival timestamp.</td>
+            </tr>
+            <tr>
+              <td style="font-family: var(--font-mono); font-weight: 700; color: var(--caramel);">sustained_seconds</td>
+              <td style="font-family: var(--font-mono);">FLOAT</td>
+              <td>2468.2</td>
+              <td>Continuous verified classroom attendance duration in seconds.</td>
+            </tr>
+            <tr>
+              <td style="font-family: var(--font-mono); font-weight: 700; color: var(--caramel);">status</td>
+              <td style="font-family: var(--font-mono);">STRING</td>
+              <td>Verified Present (&ge;10.0s)</td>
+              <td>Accredited attendance verification outcome.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="running-footer">
+        <span>ATELIER OPERATIONAL PAPERS // COMPENDIUM 043-O</span>
+        <span>SECTION 05: CALIBRATION &amp; CSV EXPORT</span>
+        <span class="folio-pill">PAGE 06 OF 07</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       PAGE 7: MILESTONE 06: TROUBLESHOOTING, SHORTCUTS & FAQ
+       ======================================================================== -->
+  <div class="page" id="guide-page-7">
+    <div class="content-wrap">
+      
+      <div class="running-header">
+        <span>ATELIER // PRESENCE &bull; OPERATOR MANUAL</span>
+        <span class="doc-id">MILESTONE 06: REFERENCE &amp; FAQ</span>
+        <span>PAGE 07</span>
+      </div>
+
+      <div class="page-title-block">
+        <div class="page-num-label">OPERATIONAL MILESTONE 06</div>
+        <h2 class="page-heading">06 / Troubleshooting, Keyboard Shortcuts &amp; FAQ</h2>
+        <div class="page-subheading">
+          Instant solutions to common classroom setup issues, keyboard shortcuts, and studio compliance guarantees.
+        </div>
+      </div>
+
+      <!-- Studio Keyboard Shortcuts Cheat Sheet -->
+      <div class="card" style="padding: 2.5mm 3.5mm; margin-bottom: 2.2mm; background-color: var(--card-bg); border-color: var(--card-border);">
+        <div style="font-family: var(--font-mono); font-size: 7.2pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--espresso); margin-bottom: 1.5mm;">
+          STUDIO KEYBOARD SHORTCUTS REFERENCE
+        </div>
+        <div class="grid-4">
+          <div style="border-left: 2px solid var(--caramel); padding-left: 2.5mm;">
+            <div style="font-family: var(--font-mono); font-size: 7.5pt; font-weight: bold; color: var(--espresso);">Press '?'</div>
+            <div style="font-size: 6.8pt; color: var(--mocha);">Open / Close Concierge Guide</div>
+          </div>
+          <div style="border-left: 2px solid var(--latte); padding-left: 2.5mm;">
+            <div style="font-family: var(--font-mono); font-size: 7.5pt; font-weight: bold; color: var(--espresso);">Press 'Esc'</div>
+            <div style="font-size: 6.8pt; color: var(--mocha);">Minimize Guide / Clear Overlays</div>
+          </div>
+          <div style="border-left: 2px solid var(--caramel); padding-left: 2.5mm;">
+            <div style="font-family: var(--font-mono); font-size: 7.5pt; font-weight: bold; color: var(--espresso);">Press 'Tab'</div>
+            <div style="font-size: 6.8pt; color: var(--mocha);">Cycle Calibration Sliders</div>
+          </div>
+          <div style="border-left: 2px solid var(--latte); padding-left: 2.5mm;">
+            <div style="font-family: var(--font-mono); font-size: 7.5pt; font-weight: bold; color: var(--espresso);">Space / Enter</div>
+            <div style="font-size: 6.8pt; color: var(--mocha);">Toggle Stream or Active Control</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Troubleshooting Resolution Matrix -->
+      <div class="card" style="padding: 2.8mm 3.5mm; margin-bottom: 2.2mm;">
+        <span style="font-family: var(--font-mono); font-size: 7.2pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--espresso);">
+          OPERATOR TROUBLESHOOTING RESOLUTION MATRIX
+        </span>
+        <table class="clean-table" style="font-size: 7.2pt;">
+          <thead>
+            <tr>
+              <th style="width: 28%;">OBSERVED SYMPTOM</th>
+              <th style="width: 32%;">ROOT CAUSE</th>
+              <th style="width: 40%;">RECOMMENDED RESOLUTION</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight: 600; color: var(--caramel);">Webcam black or permission denied</td>
+              <td>Browser blocked video access, or camera claimed by Teams/Zoom.</td>
+              <td>Click the lock icon in Chrome address bar &rarr; select <strong>Always Allow</strong>. Close other video apps, then click <code>[Initialize Local Camera]</code>.</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 600; color: var(--caramel);">Participant tracked under multiple IDs</td>
+              <td>Sudden head movement exceeded distance threshold, or severe backlight.</td>
+              <td>Ensure room light is in front of faces. The tracker includes a <strong>3-second occlusion grace period</strong> to reconnect briefly turned faces.</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 600; color: var(--caramel);">Audio visualizer shows no bars</td>
+              <td>Microphone muted via button, or system audio input floor too high.</td>
+              <td>Check if <code>[Unmute Mic]</code> is shown. Adjust <em>Acoustic Silence dB Floor</em> slider down to -42.0 dB in Section 05.</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 600; color: var(--caramel);">Student not added to ledger</td>
+              <td>Presence did not reach sustained 10.0-second threshold.</td>
+              <td>Keep student seated in camera view for 10 seconds until drafting bracket glows caramel and marks <code>Verified Present</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- FAQ & Studio Seal Grid -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title-mono" style="color: var(--caramel);">Privacy &amp; Compliance FAQ</div>
+          <div style="margin-bottom: 2mm;">
+            <strong style="color: var(--espresso); font-size: 7.5pt; display: block;">Q: Are student facial photos or biometric scans stored?</strong>
+            <p style="font-size: 7.2pt; margin-top: 0.5mm;"><strong>No.</strong> Video frames exist strictly as transient pixel matrices in server RAM. They are evaluated for presence and destroyed within 100 milliseconds. No video files, photos, or facial embeds are ever written to disk.</p>
+          </div>
+          <div>
+            <strong style="color: var(--espresso); font-size: 7.5pt; display: block;">Q: Can Atelier run entirely offline without internet?</strong>
+            <p style="font-size: 7.2pt; margin-top: 0.5mm;"><strong>Yes.</strong> All Haar cascades, Librosa audio filters, and SQLite writes execute locally. If no internet or API key is present, the pedagogical AI uses a 6-state deterministic offline rulebook.</p>
+          </div>
+        </div>
+
+        <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div class="card-title-mono" style="color: var(--caramel);">Official Studio Seal &amp; Certification</div>
+            <p style="font-size: 7.2pt;">This manual certifies that the Atelier // Presence studio rig conforms to the Slow Morning editorial telemetry standard, offering complete pedagogical balance with strict student privacy.</p>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--latte); padding-top: 2mm; margin-top: 2mm;">
+            <div style="font-family: var(--font-mono); font-size: 6.5pt; color: var(--mocha); line-height: 1.35;">
+              ATELIER PRESENCE DIVISION<br>
+              RELEASE: 2026.10-STABLE<br>
+              SQLITE WAL: SYNCHRONIZED
+            </div>
+
+            <svg width="50" height="50" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="46" stroke="#B8772F" stroke-width="1.5" stroke-dasharray="3 3"/>
+              <circle cx="50" cy="50" r="40" stroke="#6B4630" stroke-width="1"/>
+              <circle cx="50" cy="50" r="28" stroke="#D2AE82" stroke-width="0.8"/>
+              <circle cx="50" cy="50" r="4" fill="#B8772F"/>
+              <path d="M 50 15 L 50 25 M 50 75 L 50 85 M 15 50 L 25 50 M 75 50 L 85 50" stroke="#B8772F" stroke-width="1.2"/>
+              <text x="50" y="44" fill="#1C1310" font-family="'JetBrains Mono', monospace" font-size="6" text-anchor="middle" font-weight="bold">ATELIER</text>
+              <text x="50" y="60" fill="#B8772F" font-family="'JetBrains Mono', monospace" font-size="5" text-anchor="middle">VERIFIED</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="running-footer">
+        <span>ATELIER OPERATIONAL PAPERS // COMPENDIUM 043-O</span>
+        <span>SECTION 06: REFERENCE &amp; FAQ</span>
+        <span class="folio-pill">PAGE 07 OF 07</span>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
+"""
+
+# Write HTML file
+with open(HTML_PATH, "w", encoding="utf-8") as f:
+    f.write(html_content)
+print(f"[OK] Wrote HTML to: {HTML_PATH} ({len(html_content)} bytes)")
+
+# Compile to PDF using Chrome Headless
+print("[...] Compiling PDF via Chrome Headless...")
+cmd = [
+    CHROME_PATH,
+    "--headless=new",
+    "--no-pdf-header-footer",
+    f"--print-to-pdf={PDF_PATH}",
+    f"file:///{HTML_PATH.replace(os.sep, '/')}"
+]
+res = subprocess.run(cmd, capture_output=True, text=True)
+if res.returncode != 0:
+    print(f"[ERROR] Chrome headless failed: {res.stderr}")
+else:
+    pdf_size = os.path.getsize(PDF_PATH)
+    print(f"[OK] Generated PDF: {PDF_PATH} ({pdf_size:,} bytes)")
+
+# Verify with pypdfium2
+pdf = pdfium.PdfDocument(PDF_PATH)
+page_count = len(pdf)
+print(f"[OK] Total Pages in Operator Guide PDF: {page_count}")
+for i in range(page_count):
+    page = pdf[i]
+    w, h = page.get_width(), page.get_height()
+    print(f"     Page {i+1}: {w:.1f}pt x {h:.1f}pt")
+    # Render page 1 and page 2 to verify
+    image = page.render(scale=2).to_pil()
+    img_path = os.path.join(DOCS_DIR, f"guide_page_{i+1}_fixed.png")
+    image.save(img_path)
+    print(f"     [Saved verification image]: {img_path}")
+
+print("=" * 70)
+print(" OPERATOR GUIDE GENERATION COMPLETE!")
+print("=" * 70)
