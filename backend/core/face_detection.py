@@ -111,14 +111,37 @@ class FaceDetector:
         self.tracks: Dict[int, TrackedParticipant] = {}
         self.max_disappeared = 12  # frames (~1.0s) before pruning transient track
 
-        # Load OpenCV default frontal face haar cascade
-        cascade_path = os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml")
-        self.face_cascade = cv2.CascadeClassifier(cascade_path)
-        if self.face_cascade.empty():
-            # Fallback path if cv2.data is not pre-populated
-            self.face_cascade = cv2.CascadeClassifier(
-                cv2.samples.findFile("haarcascade_frontalface_default.xml")
-            )
+        # Load OpenCV default frontal face haar cascade with robust local fallback
+        local_cascade = os.path.join(os.path.dirname(__file__), "haarcascade_frontalface_default.xml")
+        self.face_cascade = None
+
+        cascade_candidates = [
+            local_cascade,
+            getattr(cv2, "data", None) and getattr(cv2.data, "haarcascades", None) and os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml"),
+        ]
+
+        for p in cascade_candidates:
+            if p and os.path.exists(p):
+                try:
+                    cc = cv2.CascadeClassifier(p)
+                    if not cc.empty():
+                        self.face_cascade = cc
+                        break
+                except Exception:
+                    pass
+
+        if self.face_cascade is None or self.face_cascade.empty():
+            try:
+                sample_path = cv2.samples.findFile("haarcascade_frontalface_default.xml")
+                self.face_cascade = cv2.CascadeClassifier(sample_path)
+            except Exception:
+                pass
+
+        if self.face_cascade is None:
+            try:
+                self.face_cascade = cv2.CascadeClassifier()
+            except Exception:
+                self.face_cascade = None
 
     def _compute_iou(self, boxA: Tuple[int, int, int, int], boxB: Tuple[int, int, int, int]) -> float:
         xA = max(boxA[0], boxB[0])
@@ -150,13 +173,18 @@ class FaceDetector:
         gray = cv2.equalizeHist(gray)
 
         # Detect multi-scale frontal faces
-        detected_rects = self.face_cascade.detectMultiScale(
-            gray,
-            scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=(36, 36),
-            flags=cv2.CASCADE_SCALE_IMAGE,
-        )
+        detected_rects = ()
+        if self.face_cascade is not None and not self.face_cascade.empty():
+            try:
+                detected_rects = self.face_cascade.detectMultiScale(
+                    gray,
+                    scaleFactor=1.1,
+                    minNeighbors=5,
+                    minSize=(36, 36),
+                    flags=cv2.CASCADE_SCALE_IMAGE,
+                )
+            except Exception:
+                detected_rects = ()
 
         current_boxes: List[Tuple[int, int, int, int]] = []
         if len(detected_rects) > 0:
