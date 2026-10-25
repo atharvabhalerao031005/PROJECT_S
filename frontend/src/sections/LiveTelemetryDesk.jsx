@@ -456,17 +456,17 @@ export default function LiveTelemetryDesk({ telemetry }) {
                 {/* Pair of Vintage Galvanometer Dial Gauges */}
                 <div className="grid grid-cols-2 gap-4 py-2 border-b border-roast/60">
                   <AnalogDialGauge
-                    value={metrics.visual_attention}
+                    value={isStreaming ? metrics.visual_attention : 0}
                     label="GAZE FOCUS"
-                    unit="%"
-                    sublabel="FRONTAL SYMMETRY"
+                    unit={isStreaming ? "%" : "—"}
+                    sublabel={isStreaming ? "FRONTAL SYMMETRY" : "STANDBY // INACTIVE"}
                     size={135}
                   />
                   <AnalogDialGauge
-                    value={metrics.fused_score}
+                    value={isStreaming ? metrics.fused_score : 0}
                     label="FUSION INDEX"
-                    unit="/100"
-                    sublabel="MULTIMODAL EQUILIBRIUM"
+                    unit={isStreaming ? "/100" : "—"}
+                    sublabel={isStreaming ? "MULTIMODAL EQUILIBRIUM" : "STANDBY // INACTIVE"}
                     size={135}
                   />
                 </div>
@@ -477,7 +477,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
                     <span className="text-crema">Active Participants in Frame</span>
                     <span className="dotted-leader" />
                     <span className="font-mono text-sm text-caramel font-semibold">
-                      {metrics.active_count.toString().padStart(2, '0')}
+                      {isStreaming ? metrics.active_count.toString().padStart(2, '0') : '00 (Standby)'}
                     </span>
                   </div>
 
@@ -485,7 +485,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
                     <span className="text-crema">Sustained Presence Duration</span>
                     <span className="dotted-leader" />
                     <span className="font-mono text-sm text-foam">
-                      {formatSeconds(participants[0]?.sustained_seconds || 258)}
+                      {isStreaming && participants.length > 0 ? formatSeconds(participants[0]?.sustained_seconds) : '— (Awaiting Stream)'}
                     </span>
                   </div>
 
@@ -493,7 +493,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
                     <span className="text-crema">Visual Attention Index</span>
                     <span className="dotted-leader" />
                     <span className="font-mono text-sm text-latte font-medium">
-                      {metrics.visual_attention.toFixed(1)}%
+                      {isStreaming && metrics.visual_attention > 0 ? `${metrics.visual_attention.toFixed(1)}%` : '— (Standby)'}
                     </span>
                   </div>
 
@@ -501,9 +501,9 @@ export default function LiveTelemetryDesk({ telemetry }) {
                     <span className="text-crema">Acoustic Interaction (RMS)</span>
                     <span className="dotted-leader" />
                     <span className="font-mono text-sm text-foam flex items-center space-x-1.5">
-                      <span className={`w-1.5 h-1.5 rounded-full ${metrics.is_speech_active ? 'bg-caramel animate-incandescent' : 'bg-mocha/70'}`} />
-                      <span>{metrics.audio_db ? `${metrics.audio_db.toFixed(1)} dB` : '-18.4 dB'}</span>
-                      {hasMic && !isSimulating && isMicMuted && (
+                      <span className={`w-1.5 h-1.5 rounded-full ${isStreaming && metrics.is_speech_active ? 'bg-caramel animate-incandescent' : 'bg-mocha/70'}`} />
+                      <span>{isStreaming && metrics.audio_db !== null ? `${metrics.audio_db.toFixed(1)} dBFS` : '— (Standby)'}</span>
+                      {isStreaming && hasMic && !isSimulating && isMicMuted && (
                         <span className="text-[10px] text-caramel/80 uppercase font-mono">[MUTED]</span>
                       )}
                     </span>
@@ -513,7 +513,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
                     <span className="text-crema">Movement Dynamics</span>
                     <span className="dotted-leader" />
                     <span className="font-mono text-sm text-foam">
-                      {metrics.movement_dynamics ? `${metrics.movement_dynamics.toFixed(1)} / 100` : '76.0 / 100'}
+                      {isStreaming && metrics.movement_dynamics > 0 ? `${metrics.movement_dynamics.toFixed(1)} / 100` : '— (Standby)'}
                     </span>
                   </div>
 
@@ -521,7 +521,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
                     <span className="text-crema">Inactivity Penalty</span>
                     <span className="dotted-leader" />
                     <span className="font-mono text-sm text-latte/80 font-medium">
-                      -{metrics.inactivity_penalty ? metrics.inactivity_penalty.toFixed(1) : '0.0'}
+                      {isStreaming ? `-${metrics.inactivity_penalty.toFixed(1)}` : '0.0 (Standby)'}
                     </span>
                   </div>
 
@@ -529,8 +529,14 @@ export default function LiveTelemetryDesk({ telemetry }) {
                     <span className="text-foam font-display text-base">Multimodal Fusion Score</span>
                     <span className="dotted-leader" />
                     <span className="font-mono text-lg text-caramel font-bold">
-                      {metrics.fused_score.toFixed(1)}{' '}
-                      <span className="text-xs text-latte/70 font-normal">/ 100</span>
+                      {isStreaming && metrics.fused_score > 0 ? (
+                        <>
+                          {metrics.fused_score.toFixed(1)}{' '}
+                          <span className="text-xs text-latte/70 font-normal">/ 100</span>
+                        </>
+                      ) : (
+                        <span className="text-xs text-latte/70 font-normal tracking-wider">STANDBY</span>
+                      )}
                     </span>
                   </div>
 
@@ -538,7 +544,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
                     <span className="text-latte/70 uppercase">Session Trajectory</span>
                     <span className="dotted-leader" />
                     <span className="text-caramel uppercase tracking-wider font-semibold">
-                      {metrics.trend || 'Steady Plateau'}
+                      {isStreaming ? (metrics.trend || 'Steady Plateau') : 'AWAITING SENSOR STREAM'}
                     </span>
                   </div>
                 </div>
@@ -588,8 +594,21 @@ export default function LiveTelemetryDesk({ telemetry }) {
               </div>
 
               {/* Roster Rows with Fraunces serif names, baseline-aligned dotted leaders, and hover effects */}
-              <div className="divide-y divide-roast/60">
-                {participants.map((p, idx) => {
+              {participants.length === 0 ? (
+                <div className="py-16 text-center space-y-3 border border-dashed border-mocha/40 bg-roast/20 my-4">
+                  <div className="flex items-center justify-center space-x-2">
+                    <span className="w-2 h-2 rounded-full bg-mocha/60" />
+                    <span className="font-mono text-xs uppercase tracking-widest text-caramel font-semibold">
+                      LEDGER STANDBY // AWAITING COHORT DETECTION
+                    </span>
+                  </div>
+                  <p className="font-sans text-xs sm:text-sm text-crema/75 max-w-md mx-auto leading-relaxed">
+                    Zero active participants detected in optical frame. Initialize local webcam or launch classroom simulation to record sustained attendance.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-roast/60">
+                  {participants.map((p, idx) => {
                   const isVerified = p.is_verified || (typeof p.status === 'string' && p.status.startsWith('Verified Present'));
                   const glyphType = isVerified ? 'seal' : 'eye';
                   const arrivalStamp = `09:${10 + idx * 2}:${String(14 + idx * 7).padStart(2, '0')} UTC`;
@@ -641,6 +660,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
                   );
                 })}
               </div>
+              )}
 
               {/* Tilted Archival Marginalia Field Note attached to Ledger */}
               <div

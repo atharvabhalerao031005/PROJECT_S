@@ -14,28 +14,24 @@ export function useTelemetrySocket() {
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [micRms, setMicRms] = useState(0.015);
   const [annotatedFrame, setAnnotatedFrame] = useState(null);
-  const [participants, setParticipants] = useState([
-    { track_id: "Participant 01", sustained_seconds: 420.5, status: "Verified Present", head_pose_score: 92.4, bbox: [120, 90, 110, 130] },
-    { track_id: "Participant 02", sustained_seconds: 395.2, status: "Verified Present", head_pose_score: 87.1, bbox: [280, 85, 105, 125] },
-    { track_id: "Participant 03", sustained_seconds: 14.8, status: "Verified Present", head_pose_score: 79.5, bbox: [430, 95, 115, 135] }
-  ]);
+  const [participants, setParticipants] = useState([]);
   const [metrics, setMetrics] = useState({
-    active_count: 3,
-    visual_attention: 84.2,
-    acoustic_interaction: 78.5,
-    audio_db: -18.4,
-    is_speech_active: true,
-    movement_dynamics: 76.0,
-    inactivity_penalty: 0.0,
-    fused_score: 81.5,
-    trend: 'Steady Plateau',
-    fused_history: [78.2, 79.0, 80.4, 82.1, 81.5],
-    spectral_bins: [0.18, 0.24, 0.36, 0.52, 0.74, 0.86, 0.82, 0.68, 0.55, 0.46, 0.38, 0.31, 0.25, 0.19, 0.13, 0.08],
+    active_count: 0,
+    visual_attention: 0,
+    acoustic_interaction: 0,
+    audio_db: null,
+    is_speech_active: false,
+    movement_dynamics: 0,
+    inactivity_penalty: 0,
+    fused_score: 0,
+    trend: 'Standby — Awaiting Stream',
+    fused_history: [],
+    spectral_bins: Array(16).fill(0.02),
   });
   const [aiSuggestion, setAiSuggestion] = useState({
-    suggestion: "Cohort attention remains balanced and receptive. Transition smoothly into Socratic architectural critique without pausing for a formal break.",
-    pacing_action: "Deepen Discussion Cadence",
-    provider: "Offline Heuristic Engine (Local)",
+    suggestion: "Telemetry rig is in standby. Initialize local camera and microphone or launch classroom simulation to begin real-time pedagogical observation.",
+    pacing_action: "Awaiting Live Sensor Activation",
+    provider: "Standby Engine",
   });
 
   const wsRef = useRef(null);

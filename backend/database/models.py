@@ -107,55 +107,8 @@ def init_db() -> None:
     db = SessionLocal()
     try:
         now = datetime.utcnow()
-        if db.query(AttendanceLog).count() == 0:
-            demo_logs = [
-                AttendanceLog(
-                    session_id="studio-morning-session",
-                    participant_id="Participant 01 (Elena Rostova)",
-                    first_seen=now,
-                    last_seen=now,
-                    timestamp=now,
-                    sustained_seconds=420.5,
-                    status="Verified Present",
-                ),
-                AttendanceLog(
-                    session_id="studio-morning-session",
-                    participant_id="Participant 02 (Julian Sterling)",
-                    first_seen=now,
-                    last_seen=now,
-                    timestamp=now,
-                    sustained_seconds=395.2,
-                    status="Verified Present",
-                ),
-                AttendanceLog(
-                    session_id="studio-morning-session",
-                    participant_id="Participant 03 (Clara Vance)",
-                    first_seen=now,
-                    last_seen=now,
-                    timestamp=now,
-                    sustained_seconds=14.8,
-                    status="Verified Present",
-                ),
-                AttendanceLog(
-                    session_id="studio-morning-session",
-                    participant_id="Participant 04 (Marcus Chen)",
-                    first_seen=now,
-                    last_seen=now,
-                    timestamp=now,
-                    sustained_seconds=4.2,
-                    status="Tracking...",
-                ),
-                AttendanceLog(
-                    session_id="studio-morning-session",
-                    participant_id="Participant 05 (Aria Thorne)",
-                    first_seen=now,
-                    last_seen=now,
-                    timestamp=now,
-                    sustained_seconds=1.1,
-                    status="Transient / Ignored",
-                ),
-            ]
-            db.add_all(demo_logs)
+        # Clean schema initialized - zero fake/mock attendees
+        pass
 
         if db.query(AIInsight).count() == 0:
             db.add(
