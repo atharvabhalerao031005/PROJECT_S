@@ -42,9 +42,11 @@ multimodal-attendance-agent/
 │       │   ├── useTelemetrySocket.js # WebSocket client + WebRTC webcam + WebAudio microphone PCM
 │       │   └── useMagnetic.js        # GSAP quickTo magnetic button physics
 │       ├── components/
-│       │   ├── CustomCursor.jsx    # Caramel dot + lagging ring
+│       │   ├── CustomCursor.jsx    # 0ms instant pointer tracking + precision CAD coordinates + spring reticle
 │       │   ├── GrainOverlay.jsx    # Inline SVG feTurbulence 5.5% opacity overlay
-│       │   ├── Navbar.jsx          # Dual-theme sticky nav with instant top-hover drop & pin toggle
+│       │   ├── Navbar.jsx          # Dual-theme sticky nav with instant top-hover drop, pin toggle & mobile drawer
+│       │   ├── AtelierDialogueGuide.jsx # 5-step floating interactive concierge & walkthrough guide (Keyboard '?')
+│       │   ├── AtelierSelect.jsx   # Custom editorial dropdown with rotating brass chevrons & tactile option cards
 │       │   ├── AnalogSpectrumVisualizer.jsx # 16-band vintage studio equalizer
 │       │   ├── AnalogDialGauge.jsx # Second-order galvanometer needle meters
 │       │   └── svgs/

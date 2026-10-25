@@ -25,7 +25,20 @@ export default function App() {
   const lenisRef = useRef(null);
   const [navTheme, setNavTheme] = useState('dark');
   const [activeSection, setActiveSection] = useState('hero');
-  const [isGuideOpen, setIsGuideOpen] = useState(true);
+  const [isGuideOpen, setIsGuideOpen] = useState(() => {
+    try {
+      return localStorage.getItem('atelier_dialogue_seen') !== 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  const handleCloseGuide = () => {
+    setIsGuideOpen(false);
+    try {
+      localStorage.setItem('atelier_dialogue_seen', 'true');
+    } catch {}
+  };
 
   useEffect(() => {
     // 1. Initialize Lenis Smooth Scroll
@@ -195,7 +208,7 @@ export default function App() {
       {/* Floating Bespoke Atelier Concierge Dialogue Guide */}
       <AtelierDialogueGuide
         isOpen={isGuideOpen}
-        onClose={() => setIsGuideOpen(false)}
+        onClose={handleCloseGuide}
         onOpen={() => setIsGuideOpen(true)}
       />
     </div>

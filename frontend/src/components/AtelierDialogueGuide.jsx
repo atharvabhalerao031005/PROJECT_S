@@ -87,6 +87,9 @@ export default function AtelierDialogueGuide({ isOpen, onClose, onOpen }) {
       jumpToSection(steps[step + 1].targetId);
     } else {
       setIsMinimized(true);
+      try {
+        localStorage.setItem('atelier_dialogue_seen', 'true');
+      } catch {}
     }
   };
 

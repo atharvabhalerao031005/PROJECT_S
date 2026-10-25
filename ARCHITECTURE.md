@@ -196,7 +196,8 @@ The `PedagogicalAgent` generates context-aware pacing insights reflecting real c
 | `/api/health` | `GET` | Operational health check | JSON (`status: "operational"`, `sqlite_wal_enabled: true`) |
 | `/api/attendance` | `GET` | Full verified attendance ledger | JSON list sorted by `timestamp desc` |
 | `/api/analytics/trends` | `GET` | Aggregated session metrics | JSON (`avg_fused_score`, `peak_active_faces`, etc.) |
-| `/api/calibration` | `POST` | Update threshold & trigger AI note | JSON (`sustained_threshold`, `session_title`) |
+| `/api/calibration` | `GET` | Retrieve live sensory rig parameters | JSON (`sustained_threshold`, `vad_sensitivity`, `ai_cadence`) |
+| `/api/calibration` | `POST` | Update threshold, VAD floor & cadence | JSON (`sustained_threshold`, `vad_sensitivity`, `ai_cadence`) |
 | `/api/export/csv` | `GET` | Live attendance CSV download | RFC 4180 streaming `text/csv` via Pandas |
 | `/ws/stream` | `WebSocket`| Full-duplex real-time telemetry | Bidirectional JSON stream at 6–10 FPS |
 
