@@ -1,0 +1,59 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Python build & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Node.js and Frontend build
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+.npm/
+.eslintcache
+
+# Local database and state (let container initialize fresh or mount via volume)
+*.db
+*.sqlite3
+*.db-journal
+
+# Secrets and environment files
+.env
+.env.local
+.env.*.local
+
+# IDEs & Editor metadata
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs & temp
+*.log
+logs/
+tmp/
+temp/

@@ -1,0 +1,188 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --espresso: #1C1310;  /* Primary deep background */
+  --roast:    #3A2619;  /* Secondary dark surface / dividers */
+  --mocha:    #6B4630;  /* Muted structural borders & secondary text */
+  --caramel:  #B8772F;  /* Single active accent — live telemetry pulse, focus states */
+  --latte:    #D2AE82;  /* Warm mid-tone illustrations & chart strokes */
+  --crema:    #EBDCC2;  /* Secondary light surface & ledger rows */
+  --foam:     #F7F0E3;  /* Primary light editorial paper background */
+}
+
+/* Base Editorial Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  background-color: var(--espresso);
+  color: var(--foam);
+  font-family: 'Instrument Sans', sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--espresso);
+  color: var(--foam);
+  overflow-x: hidden;
+  transition: background-color 0.8s cubic-bezier(0.22, 1, 0.36, 1), color 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Custom Editorial Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--espresso);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--mocha);
+  border-radius: 0px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--caramel);
+}
+
+/* Fluid Typography Utilities */
+.fluid-headline {
+  font-size: clamp(3.2rem, 8.5vw, 9.5rem);
+  line-height: 0.94;
+  letter-spacing: -0.035em;
+}
+
+.fluid-subheadline {
+  font-size: clamp(1.8rem, 4vw, 4.2rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+/* Micro Label */
+.micro-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--mocha);
+}
+
+/* Editorial Dotted Leader Line */
+.dotted-leader {
+  flex: 1 1 auto;
+  border-bottom: 1.5px dotted var(--mocha);
+  margin: 0 14px;
+  position: relative;
+  transform: translateY(-4px);
+  transition: border-color 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+  opacity: 0.65;
+}
+
+.group:hover .dotted-leader {
+  border-bottom-color: var(--caramel);
+  opacity: 1;
+}
+
+/* Incandescent Analog Indicator Lamp */
+@keyframes incandescentPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 6px rgba(184, 119, 47, 0.7), 0 0 12px rgba(184, 119, 47, 0.3);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.9);
+    box-shadow: 0 0 1px rgba(184, 119, 47, 0.2);
+  }
+}
+
+.animate-incandescent {
+  animation: incandescentPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes tapeBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.2; }
+}
+
+.animate-tape-blink {
+  animation: tapeBlink 1.4s steps(1, start) infinite;
+}
+
+/* Tactile Studio Status Pill */
+.tactile-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0.65rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  border: 1px solid var(--roast);
+  background-color: rgba(28, 19, 16, 0.7);
+  backdrop-filter: blur(4px);
+  transition: all 0.25s ease;
+}
+
+.tactile-status-pill:hover {
+  border-color: var(--caramel);
+  color: var(--foam);
+}
+
+/* Editorial Marginalia Sticky Note */
+.marginalia-note {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  position: relative;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease;
+}
+
+.marginalia-note:hover {
+  transform: rotate(0deg) scale(1.02) !important;
+}
+
+/* Studio Equalizer Column */
+.eq-meter-column {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  height: 100%;
+}
+
+.eq-meter-seg {
+  width: 100%;
+  border-radius: 0.5px;
+  transition: opacity 0.08s ease, background-color 0.08s ease;
+}
+
+/* Custom Cursor Hide Native on Desktop */
+@media (hover: hover) and (pointer: fine) {
+  body {
+    cursor: none;
+  }
+  a, button, input, [role="button"] {
+    cursor: none;
+  }
+}
+
+/* GSAP Line Mask Reveal wrapper */
+.line-mask {
+  overflow: hidden;
+  display: block;
+}
+
+.line-inner {
+  display: block;
+  transform: translateY(0);
+}
