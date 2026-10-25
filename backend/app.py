@@ -452,6 +452,7 @@ async def websocket_stream(websocket: WebSocket):
                 "spectral_bins": spectral_bins,
                 "ai_suggestion": latest_ai_suggestion,
                 "timestamp": datetime.utcnow().isoformat(),
+                "client_timestamp": data.get("client_timestamp"),
             }
 
             await websocket.send_json(payload)

@@ -26,6 +26,11 @@ export default function LiveTelemetryDesk({ telemetry }) {
     isMicMuted,
     micRms,
     annotatedFrame,
+    mediaStream,
+    cameraDeviceLabel,
+    streamResolution,
+    latencyMs,
+    videoRef,
     participants,
     metrics,
     aiSuggestion,
@@ -298,24 +303,67 @@ export default function LiveTelemetryDesk({ telemetry }) {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               {/* Left 7 Columns: Darkroom Viewfinder & Contact Sheet Styling */}
               <div className="lg:col-span-7 space-y-4">
-                {/* Contact Sheet Frame Header Strip */}
+                {/* Authentic Hardware Telemetry Header Strip */}
                 <div className="flex items-center justify-between font-mono text-[10px] text-latte/70 px-1 font-medium">
-                  <span>FRAME: 024 // KODAK PORTRA 400</span>
+                  <div className="flex items-center space-x-2 truncate">
+                    <span className={`w-1.5 h-1.5 rounded-full ${isStreaming ? 'bg-caramel animate-incandescent' : 'bg-mocha/60'}`} />
+                    <span className="text-foam font-semibold truncate">
+                      {isStreaming
+                        ? isSimulating
+                          ? 'SIM: SYNTHETIC STUDIO COHORT // ROOM 402'
+                          : `OPTICAL DEVICE: ${cameraDeviceLabel || 'LOCAL WEBCAM SENSOR'}`
+                        : 'OPTICAL SENSOR: STANDBY // IDLE APERTURE'}
+                    </span>
+                  </div>
+
                   <span className="text-latte hidden sm:inline">
-                    EXPOSURE: 1/125s • f/2.8 • ISO 400
+                    {isStreaming
+                      ? `${streamResolution?.width || 640}×${streamResolution?.height || 480} @ ${streamResolution?.fps || 30} FPS • RGB`
+                      : '0×0 @ 0 FPS • SENSORS IDLE'}
                   </span>
-                  <span>OPTICAL STATUS: SENSING</span>
+
+                  <span className="font-semibold text-caramel">
+                    {isStreaming
+                      ? `${latencyMs !== null ? `${latencyMs}ms PING • ` : ''}WS: ONLINE`
+                      : 'STATUS: STANDBY'}
+                  </span>
                 </div>
 
                 {/* Main Viewfinder Canvas with 1.5px Caramel/Mocha Corner Brackets */}
                 <div className="relative aspect-[4/3] bg-roast/70 border border-mocha/50 overflow-hidden flex items-center justify-center shadow-2xl">
-                  {/* Real-time frame display */}
-                  {annotatedFrame ? (
+                  {/* Real-time frame display with direct hardware video fallback */}
+                  {isStreaming && !isSimulating ? (
+                    <div className="relative w-full h-full">
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="w-full h-full object-cover transform -scale-x-100"
+                      />
+                      {annotatedFrame && (
+                        <img
+                          src={annotatedFrame}
+                          alt="OpenCV Haar Telemetry Overlay"
+                          className="absolute inset-0 w-full h-full object-cover opacity-90 pointer-events-none"
+                        />
+                      )}
+                    </div>
+                  ) : annotatedFrame ? (
                     <img
                       src={annotatedFrame}
                       alt="Live OpenCV Haar Telemetry Stream"
                       className="w-full h-full object-cover"
                     />
+                  ) : isStreaming ? (
+                    <div className="text-center p-8 space-y-4">
+                      <div className="w-16 h-16 rounded-full border border-caramel/70 mx-auto flex items-center justify-center animate-pulse">
+                        <GazeEyeGlyph className="w-8 h-8" stroke="#B8772F" />
+                      </div>
+                      <p className="font-display italic text-lg text-crema/85 max-w-sm">
+                        Opening optical aperture and calibrating sensor cone...
+                      </p>
+                    </div>
                   ) : (
                     <div className="text-center p-8 space-y-4">
                       <div className="w-16 h-16 rounded-full border border-mocha/70 mx-auto flex items-center justify-center">
@@ -372,11 +420,11 @@ export default function LiveTelemetryDesk({ telemetry }) {
 
                   {/* Bottom Viewfinder Meta Strip */}
                   <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between font-mono text-[9px] text-crema/90 bg-espresso/85 px-3 py-1 border border-roast/70 backdrop-blur-sm pointer-events-none">
-                    <span>TRACKS: {metrics.active_count.toString().padStart(2, '0')} IN FRAME</span>
+                    <span>TRACKS: {isStreaming ? metrics.active_count.toString().padStart(2, '0') : '00'} IN FRAME</span>
                     <span className="text-latte font-medium">
-                      ATTENTION: {metrics.visual_attention.toFixed(1)}%
+                      ATTENTION: {isStreaming && metrics.visual_attention > 0 ? `${metrics.visual_attention.toFixed(1)}%` : '— (STANDBY)'}
                     </span>
-                    <span>WAL LOG: ACTIVE</span>
+                    <span>WAL LOG: {isStreaming ? 'RECORDING' : 'IDLE'}</span>
                   </div>
                 </div>
 
