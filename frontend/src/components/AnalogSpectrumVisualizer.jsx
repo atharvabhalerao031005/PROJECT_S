@@ -134,7 +134,7 @@ export default function AnalogSpectrumVisualizer({
   const activeBandValue = hoveredBand !== null ? animatedBins[hoveredBand] : null;
   const activeBandDb = activeBandValue
     ? (-48 + activeBandValue * 51).toFixed(1)
-    : audioDb.toFixed(1);
+    : (audioDb !== null && audioDb !== undefined ? Number(audioDb).toFixed(1) : '-18.4');
 
   return (
     <div className="relative border border-roast bg-espresso/95 p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 shadow-2xl select-none overflow-hidden">
