@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATELIER // PRESENCE — System Architecture &amp; Technology Breakdown</title>
+  
+  <!-- Google Fonts: Fraunces, Instrument Sans, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       ATELIER // PRESENCE — "SLOW MORNING" COFFEE EDITORIAL DESIGN SYSTEM
+       Strict Architectural & Print Stylesheet (A4 Portrait • 210mm × 297mm)
+       ========================================================================== */
+    :root {
+      --espresso:   #1C1310;
+      --roast:      #3A2619;
+      --mocha:      #6B4630;
+      --caramel:    #B8772F;
+      --latte:      #D2AE82;
+      --crema:      #EBDCC2;
+      --foam:       #F7F0E3;
+      --pure-paper: #FAF6EE;
+      --crema-tint: #F2E7D5;
+      --accent-green: #3F624D;
+      --accent-amber: #9E5B26;
+
+      --font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+      --font-sans:  'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono:  'JetBrains Mono', Consolas, 'Courier New', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    @page {
+      size: A4 portrait; /* 210mm x 297mm */
+      margin: 0;
+    }
+
+    @media print {
+      html, body {
+        width: 210mm;
+        margin: 0;
+        padding: 0;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        background-color: var(--espresso);
+      }
+      .page {
+        margin: 0 !important;
+        box-shadow: none !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      .page:last-child {
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
+    }
+
+    @media screen {
+      body {
+        background-color: #2D1E16;
+        padding: 36px 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 28px;
+      }
+      .page {
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+      }
+    }
+
+    /* Base Page Dimensions & Constraints */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      height: 297mm;
+      max-height: 297mm;
+      position: relative;
+      box-sizing: border-box;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      page-break-after: always;
+      break-after: page;
+      overflow: hidden;
+      background-color: var(--foam);
+      color: var(--espresso);
+      padding: 14mm 16mm 14mm 16mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-family: var(--font-sans);
+      font-size: 8.5pt;
+      line-height: 1.45;
+    }
+
+    /* Dark Cover Theme */
+    .page.page-cover-dark {
+      background-color: var(--espresso);
+      color: var(--foam);
+    }
+
+    /* Subtle Analog Paper Texture Accent */
+    .grain-layer {
+      display: none;
+    }
+
+    .content-wrap {
+      position: relative;
+      z-index: 2;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      height: calc(297mm - 28mm);
+      overflow: hidden;
+    }
+
+    /* Running Header */
+    .running-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 2mm;
+      border-bottom: 1px solid var(--latte);
+      margin-bottom: 3.5mm;
+      font-family: var(--font-mono);
+      font-size: 6.8pt;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mocha);
+    }
+    .page-cover-dark .running-header {
+      border-bottom-color: var(--roast);
+      color: var(--latte);
+    }
+    .running-header .doc-id {
+      color: var(--caramel);
+      font-weight: 600;
+    }
+
+    /* Running Footer */
+    .running-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 2mm;
+      border-top: 1px solid var(--latte);
+      margin-top: 2.5mm;
+      font-family: var(--font-mono);
+      font-size: 6.5pt;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mocha);
+    }
+    .page-cover-dark .running-footer {
+      border-top-color: var(--roast);
+      color: var(--latte);
+    }
+    .running-footer .folio-pill {
+      background-color: var(--crema);
+      color: var(--espresso);
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 2px;
+    }
+    .page-cover-dark .running-footer .folio-pill {
+      background-color: var(--roast);
+      color: var(--foam);
+      border: 1px solid var(--mocha);
+    }
+
+    /* Typography */
+    h1, h2, h3, h4 {
+      font-family: var(--font-serif);
+      font-weight: 500;
+      line-height: 1.15;
+    }
+    .serif-italic {
+      font-style: italic;
+      font-variation-settings: 'opsz' 144;
+    }
+    .mono {
+      font-family: var(--font-mono);
+    }
+
+    .page-title-block {
+      margin-bottom: 3mm;
+    }
+    .page-num-label {
+      font-family: var(--font-mono);
+      font-size: 7.2pt;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      color: var(--caramel);
+      text-transform: uppercase;
+      margin-bottom: 1.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .page-num-label::before {
+      content: "";
+      display: inline-block;
+      width: 12px;
+      height: 1.5px;
+      background-color: var(--caramel);
+    }
+    .page-heading {
+      font-size: 17.5pt;
+      letter-spacing: -0.02em;
+      color: var(--espresso);
+      margin-bottom: 2px;
+    }
+    .page-cover-dark .page-heading {
+      color: var(--foam);
+    }
+    .page-subheading {
+      font-size: 8.5pt;
+      color: var(--mocha);
+      font-weight: 400;
+      line-height: 1.35;
+    }
+    .page-cover-dark .page-subheading {
+      color: var(--latte);
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3mm;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 2.5mm;
+    }
+
+    /* Editorial Cards */
+    .card {
+      background-color: var(--pure-paper);
+      border: 1px solid var(--latte);
+      border-radius: 3px;
+      padding: 2.5mm 3.2mm;
+    }
+    .card-crema {
+      background-color: var(--crema);
+      border: 1px solid var(--latte);
+      border-radius: 3px;
+      padding: 2.5mm 3.2mm;
+    }
+    .card-dark {
+      background-color: var(--espresso);
+      color: var(--foam);
+      border: 1px solid var(--roast);
+      border-radius: 3px;
+      padding: 2.5mm 3.2mm;
+    }
+    .card-dark h3, .card-dark h4 { color: var(--crema); }
+
+    .card-title-mono {
+      font-family: var(--font-mono);
+      font-size: 7.2pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--roast);
+      margin-bottom: 1.5mm;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .card-dark .card-title-mono {
+      color: var(--latte);
+    }
+    .card-title-serif {
+      font-family: var(--font-serif);
+      font-size: 9.5pt;
+      font-weight: 600;
+      color: var(--espresso);
+      margin-bottom: 1.5mm;
+    }
+
+    p {
+      font-size: 7.8pt;
+      line-height: 1.42;
+      color: var(--roast);
+    }
+    .page-cover-dark p {
+      color: var(--crema);
+    }
+    p + p {
+      margin-top: 1.5mm;
+    }
+
+    /* Mathematical Block */
+    .formula-block {
+      background: var(--crema-tint);
+      border-left: 2.5px solid var(--caramel);
+      padding: 1.8mm 2.8mm;
+      border-radius: 0 2px 2px 0;
+      margin: 1.8mm 0;
+    }
+    .card-dark .formula-block {
+      background: #251B18;
+      border-left-color: var(--caramel);
+    }
+    .formula-math {
+      font-family: var(--font-mono);
+      font-size: 7.8pt;
+      font-weight: 600;
+      color: var(--espresso);
+      letter-spacing: 0.02em;
+    }
+    .card-dark .formula-math {
+      color: var(--foam);
+    }
+    .formula-desc {
+      font-size: 6.8pt;
+      color: var(--mocha);
+      margin-top: 1mm;
+      line-height: 1.3;
+    }
+    .card-dark .formula-desc {
+      color: var(--latte);
+    }
+
+    /* Badges & Chips */
+    .tag-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 6.2pt;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 1.2px 4.5px;
+      border-radius: 2px;
+      background: var(--crema);
+      color: var(--roast);
+      border: 1px solid var(--latte);
+    }
+    .tag-badge.caramel {
+      background: rgba(184, 119, 47, 0.16);
+      border-color: var(--caramel);
+      color: var(--roast);
+    }
+    .page-cover-dark .tag-badge {
+      background: var(--roast);
+      color: var(--foam);
+      border-color: var(--mocha);
+    }
+    .page-cover-dark .tag-badge.caramel {
+      background: rgba(184, 119, 47, 0.25);
+      color: var(--foam);
+      border-color: var(--caramel);
+    }
+
+    /* Diagram Frame */
+    .diagram-frame {
+      background-color: var(--pure-paper);
+      border: 1px solid var(--latte);
+      border-radius: 3px;
+      padding: 2.2mm 2.8mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .diagram-caption {
+      font-family: var(--font-mono);
+      font-size: 6.2pt;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mocha);
+      margin-top: 1.5mm;
+      text-align: center;
+    }
+
+    /* Table Styling */
+    table.editorial-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 7.2pt;
+      margin-top: 1.5mm;
+    }
+    table.editorial-table th {
+      font-family: var(--font-mono);
+      font-size: 6.5pt;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--espresso);
+      background-color: var(--crema);
+      border-top: 1px solid var(--latte);
+      border-bottom: 1px solid var(--latte);
+      padding: 2.2px 4.5px;
+      text-align: left;
+    }
+    table.editorial-table td {
+      padding: 2.2px 4.5px;
+      border-bottom: 1px solid rgba(210, 174, 130, 0.35);
+      color: var(--roast);
+      vertical-align: middle;
+    }
+    table.editorial-table tr:last-child td {
+      border-bottom: 1px solid var(--latte);
+    }
+    table.editorial-table tr:nth-child(even) td {
+      background-color: rgba(235, 220, 194, 0.22);
+    }
+    .card-dark table.editorial-table th {
+      background-color: var(--roast);
+      color: var(--foam);
+      border-color: var(--mocha);
+    }
+    .card-dark table.editorial-table td {
+      color: var(--crema);
+      border-bottom-color: rgba(107, 70, 48, 0.5);
+    }
+    .card-dark table.editorial-table tr:nth-child(even) td {
+      background-color: rgba(58, 38, 25, 0.4);
+    }
+
+    /* Code Block */
+    pre.code-snippet {
+      background-color: #150E0C;
+      color: var(--foam);
+      border: 1px solid var(--roast);
+      border-radius: 2px;
+      padding: 2.2mm 2.8mm;
+      font-family: var(--font-mono);
+      font-size: 6.2pt;
+      line-height: 1.34;
+      overflow: hidden;
+      margin-top: 1.5mm;
+    }
+    pre.code-snippet .keyword { color: var(--caramel); font-weight: 600; }
+    pre.code-snippet .string { color: var(--latte); }
+    pre.code-snippet .comment { color: #8F7263; font-style: italic; }
+    pre.code-snippet .number { color: #E5A967; }
+
+    /* SVG Diagram Vectors */
+    .svg-diagram {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 1: EDITORIAL COVER (ARCHIVAL MONOGRAPH DARK STYLING)                -->
+  <!-- ========================================================================= -->
+  <div class="page page-cover-dark" id="page-1">
+    <div class="grain-layer"></div>
+    <div class="content-wrap" style="justify-content: space-between;">
+      
+      <!-- Top Archival Strip -->
+      <div class="running-header" style="margin-bottom: 0;">
+        <span>ATELIER COMPUTATIONAL PAPERS · MONOGRAPH NO. 042-S</span>
+        <span class="doc-id">ARCHIVAL SPECIFICATION &amp; TREATISE</span>
+        <span>REVISION 2026.10</span>
+      </div>
+
+      <!-- Registration CAD Corners & Frame -->
+      <div style="border: 1px solid var(--roast); padding: 5mm; position: relative; background: radial-gradient(circle at 50% 40%, #2A1A12 0%, #1C1310 75%); border-radius: 4px;">
+        <!-- Crosshairs -->
+        <span style="position: absolute; top: -5px; left: -5px; font-family: var(--font-mono); font-size: 10px; color: var(--caramel);">+</span>
+        <span style="position: absolute; top: -5px; right: -5px; font-family: var(--font-mono); font-size: 10px; color: var(--caramel);">+</span>
+        <span style="position: absolute; bottom: -5px; left: -5px; font-family: var(--font-mono); font-size: 10px; color: var(--caramel);">+</span>
+        <span style="position: absolute; bottom: -5px; right: -5px; font-family: var(--font-mono); font-size: 10px; color: var(--caramel);">+</span>
+
+        <!-- Centered Emblem & Major Typography -->
+        <div style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 4mm 0 2mm 0;">
+          
+          <!-- Custom Vector Emblem -->
+          <svg width="80" height="80" viewBox="0 0 100 100" style="margin-bottom: 3.5mm;">
+            <circle cx="50" cy="50" r="47" fill="none" stroke="#6B4630" stroke-width="0.8" stroke-dasharray="2 2" />
+            <circle cx="50" cy="50" r="43" fill="none" stroke="#B8772F" stroke-width="1.2" />
+            <circle cx="50" cy="50" r="35" fill="#251813" stroke="#D2AE82" stroke-width="0.75" />
+            
+            <!-- Axis Caliper Lines -->
+            <line x1="50" y1="3" x2="50" y2="11" stroke="#B8772F" stroke-width="1.4" />
+            <line x1="50" y1="89" x2="50" y2="97" stroke="#B8772F" stroke-width="1.4" />
+            <line x1="3" y1="50" x2="11" y2="50" stroke="#B8772F" stroke-width="1.4" />
+            <line x1="89" y1="50" x2="97" y2="50" stroke="#B8772F" stroke-width="1.4" />
+            
+            <!-- Starburst Geometry -->
+            <polygon points="50,21 57,41 77,50 57,59 50,79 43,59 23,50 43,41" fill="none" stroke="#B8772F" stroke-width="1" />
+            <polygon points="50,28 54,44 70,50 54,56 50,72 46,56 30,50 46,44" fill="#3A2619" stroke="#EBDCC2" stroke-width="0.8" />
+            <circle cx="50" cy="50" r="3.5" fill="#FAF6EE" />
+            
+            <!-- Emblem Typography -->
+            <text x="50" y="47" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="4.2" fill="#B8772F" font-weight="700" letter-spacing="0.8">ATELIER</text>
+            <text x="50" y="56" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="3.5" fill="#EBDCC2" letter-spacing="0.8">PRESENCE</text>
+          </svg>
+
+          <div style="font-family: var(--font-mono); font-size: 7.2pt; letter-spacing: 0.28em; text-transform: uppercase; color: var(--caramel); margin-bottom: 2mm;">
+            ARCHIVAL TECHNICAL MONOGRAPH // SERIES MM-2026-P
+          </div>
+          <h1 style="font-size: 34pt; letter-spacing: -0.03em; color: var(--foam); line-height: 1.05; margin-bottom: 2.5mm;">
+            ATELIER <span class="serif-italic" style="color: var(--caramel); font-weight: 300;">//</span> PRESENCE
+          </h1>
+          <div style="font-family: var(--font-serif); font-size: 11.5pt; font-style: italic; color: var(--crema); max-width: 500px; line-height: 1.35; margin: 0 auto;">
+            A Low-Latency, Privacy-Preserving Multimodal Telemetry and Pedagogical Equilibrium Architecture for Physical and Hybrid Learning Spaces
+          </div>
+        </div>
+
+        <!-- Metadata Matrix (2 Columns) -->
+        <div class="grid-2" style="margin-top: 4mm;">
+          <div class="card-dark" style="border-left: 2.5px solid var(--caramel);">
+            <div class="card-title-mono" style="color: var(--caramel);">SYSTEM ARCHITECTURE SPECIFICATION</div>
+            <table class="editorial-table">
+              <tr><td style="width: 38%;"><strong>Core Daemon</strong></td><td>FastAPI Async Engine (Python 3.11 Runtime)</td></tr>
+              <tr><td><strong>Computer Vision</strong></td><td>OpenCV Haar Frontal + Euclidean Centroid Bipartite Matcher</td></tr>
+              <tr><td><strong>Acoustic DSP</strong></td><td>WebAudio 16kHz PCM + Librosa Centroid (300-3400Hz)</td></tr>
+              <tr><td><strong>Persistence Engine</strong></td><td>SQLite 3.4x Write-Ahead Logging (WAL Mode, Sync=Normal)</td></tr>
+              <tr><td><strong>Pedagogy Layer</strong></td><td>Hybrid Groq Llama 3.1 8B + Gemini 3.5 Flash + 6-State Offline</td></tr>
+            </table>
+          </div>
+
+          <div class="card-dark" style="border-left: 2.5px solid var(--latte);">
+            <div class="card-title-mono" style="color: var(--latte);">COMPUTATIONAL PRIVACY GUARANTEES</div>
+            <table class="editorial-table">
+              <tr><td style="width: 38%;"><strong>Biometric Storage</strong></td><td><strong>Zero Face Persistence</strong> · Decoded RAM frames purged per tick</td></tr>
+              <tr><td><strong>Tracking Vector</strong></td><td>Dimensionless Centroids $(cX, cY)$ in memory only</td></tr>
+              <tr><td><strong>Verification Gate</strong></td><td>10.0s Integral Presence Verification · 3.0s Occlusion Grace</td></tr>
+              <tr><td><strong>Throttling Shield</strong></td><td>10.0s Calibrated Telemetry Cache · $\le 120$ tokens JSON</td></tr>
+              <tr><td><strong>Data Export</strong></td><td>RFC 4180 Streaming CSV via Pandas DataFrame Engine</td></tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- Technical Badges -->
+        <div style="display: flex; justify-content: center; gap: 6px; margin-top: 3.5mm; flex-wrap: wrap;">
+          <span class="tag-badge caramel">ZERO BIOMETRIC RETENTION</span>
+          <span class="tag-badge">IN-MEMORY CENTROID LOOP (&lt;14MS)</span>
+          <span class="tag-badge">SQLITE WAL CONCURRENCY</span>
+          <span class="tag-badge">16-BAND FFT EQUALIZER</span>
+          <span class="tag-badge caramel">RATE-PROTECTED PEDAGOGICAL AI</span>
+        </div>
+      </div>
+
+      <!-- Archival Monograph Abstract -->
+      <div class="card-dark" style="border: 1px solid var(--roast); padding: 3mm 4mm; margin-top: 3mm;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--roast); padding-bottom: 1.5mm; margin-bottom: 2mm;">
+          <span style="font-family: var(--font-mono); font-size: 6.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--caramel);">
+            ARCHIVAL MONOGRAPH ABSTRACT // PHILOSOPHICAL FOUNDATIONS
+          </span>
+          <span style="font-family: var(--font-mono); font-size: 6.2pt; color: var(--latte);">
+            REF: SPEC-2026-PRESENCE-V4
+          </span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; text-align: justify;">
+          <p style="font-size: 7.2pt; line-height: 1.42; color: var(--foam);">
+            <strong style="font-family: var(--font-serif); font-size: 13pt; line-height: 0.9; float: left; margin-right: 3px; color: var(--caramel);">I</strong>nstitutional
+            monitoring systems have historically approached classroom environments with surveillance paradigms that undermine student psychological safety, introduce brittle cloud dependencies, and accumulate sensitive biometric liability. <em>Atelier // Presence</em> treats presence telemetry not as surveillance, but as a tactile, ambient pedagogical mirror rooted in computational sovereignty.
+          </p>
+          <p style="font-size: 7.2pt; line-height: 1.42; color: var(--crema);">
+            By decoupling presence verification from facial identification, the architecture relies on mathematical Euclidean centroid tracking, temporal integral presence state machines, and real-time speech formant filtering (300Hz–3400Hz). Coupled with an air-gapped SQLite WAL database and a rate-protected pedagogical advisor, the system sustains a continuous cognitive equilibrium—fostering deep focus, human rhythm, and pedagogical clarity.
+          </p>
+        </div>
+      </div>
+
+      <!-- Bottom Running Footer -->
+      <div class="running-footer">
+        <span>ATELIER ARCHITECTURAL PAPERS // MONOGRAPH 042-S</span>
+        <span>CONFIDENTIAL &amp; OPEN SYSTEM STANDARD</span>
+        <span class="folio-pill">PAGE 01 OF 07</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 2: SYSTEM PARADIGM & SECURITY ARCHITECTURE                           -->
+  <!-- ========================================================================= -->
+  <div class="page" id="page-2">
+    <div class="grain-layer"></div>
+    <div class="content-wrap">
+      
+      <div class="running-header">
+        <span>ATELIER // PRESENCE · ARCHITECTURAL SPECIFICATION</span>
+        <span class="doc-id">SECTION 01: SYSTEM PARADIGM &amp; SECURITY</span>
+        <span>PAGE 02</span>
+      </div>
+
+      <div class="page-title-block">
+        <div class="page-num-label">PARADIGM &amp; SECURITY FOUNDATIONS</div>
+        <h2 class="page-heading">01 / System Paradigm &amp; Security Architecture</h2>
+        <div class="page-subheading">
+          Computational sovereignty through non-identifiable sensory abstraction, zero biometric storage, and SQLite WAL persistence.
+        </div>
+      </div>
+
+      <!-- Three Pillars Grid -->
+      <div class="grid-3" style="margin-bottom: 2.5mm;">
+        <div class="card" style="border-top: 2.5px solid var(--espresso);">
+          <div class="card-title-mono">1. ZERO BIOMETRIC PERSISTENCE</div>
+          <p style="font-size: 7.4pt;">
+            Incoming base64 camera frames are decoded directly into ephemeral NumPy RAM buffers. No facial embeddings, deep templates, or raw pixel tensors are ever committed to disk or transmitted to third-party endpoints.
+          </p>
+        </div>
+        <div class="card" style="border-top: 2.5px solid var(--caramel);">
+          <div class="card-title-mono">2. LOCAL CENTROID TRACKING</div>
+          <p style="font-size: 7.4pt;">
+            Detected faces are abstracted immediately into 2D spatial centroids $(cX, cY)$. Gaze vectors and velocity dynamics reside exclusively in RAM within the <code>TrackedParticipant</code> lifecycle and evaporate upon session termination.
+          </p>
+        </div>
+        <div class="card" style="border-top: 2.5px solid var(--mocha);">
+          <div class="card-title-mono">3. AIR-GAPPED SQLITE WAL</div>
+          <p style="font-size: 7.4pt;">
+            Telemetry sessions, verified attendance entries, and pedagogical records persist into a local SQLite database utilizing Write-Ahead Logging (<code>WAL</code>), achieving concurrent, lock-free streaming writes and instant CSV exports.
+          </p>
+        </div>
+      </div>
+
+      <!-- System Topology SVG Diagram (Full Width) -->
+      <div class="diagram-frame" style="margin-bottom: 2.5mm;">
+        <svg class="svg-diagram" viewBox="0 0 720 220" width="100%" height="200">
+          <defs>
+            <linearGradient id="gradSensory" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#EBDCC2" />
+              <stop offset="100%" stop-color="#D2AE82" />
+            </linearGradient>
+            <linearGradient id="gradFastAPI" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FAF6EE" />
+              <stop offset="100%" stop-color="#EBDCC2" />
+            </linearGradient>
+            <linearGradient id="gradAI" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#B8772F" />
+              <stop offset="100%" stop-color="#6B4630" />
+            </linearGradient>
+            <filter id="shadowBox" x="-5%" y="-5%" width="110%" height="110%">
+              <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#1C1310" flood-opacity="0.12" />
+            </filter>
+          </defs>
+
+          <!-- Client Viewport Container -->
+          <rect x="10" y="10" width="145" height="195" rx="4" fill="#FAF6EE" stroke="#D2AE82" stroke-width="1.2" filter="url(#shadowBox)" />
+          <rect x="10" y="10" width="145" height="22" rx="4" fill="url(#gradSensory)" stroke="#D2AE82" stroke-width="1" />
+          <text x="82" y="24" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7.5" font-weight="700" fill="#1C1310">CLIENT VIEWPORT (REACT 18)</text>
+
+          <rect x="18" y="40" width="129" height="36" rx="2" fill="#FFFFFF" stroke="#D2AE82" stroke-width="0.8" />
+          <text x="24" y="52" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="600" fill="#B8772F">WebRTC Video Ingest</text>
+          <text x="24" y="62" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">640x360 @ 6-10 FPS</text>
+          <text x="24" y="70" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">Base64 JPEG ephemera</text>
+
+          <rect x="18" y="82" width="129" height="36" rx="2" fill="#FFFFFF" stroke="#D2AE82" stroke-width="0.8" />
+          <text x="24" y="94" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="600" fill="#B8772F">WebAudio AnalyserNode</text>
+          <text x="24" y="104" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">16kHz Float32 PCM</text>
+          <text x="24" y="112" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">ScriptProcessor buffer</text>
+
+          <rect x="18" y="124" width="129" height="36" rx="2" fill="#FFFFFF" stroke="#D2AE82" stroke-width="0.8" />
+          <text x="24" y="136" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="600" fill="#B8772F">Kinetic Editorial UI</text>
+          <text x="24" y="146" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">Lenis smooth scrolling</text>
+          <text x="24" y="154" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">Dynamic SVG charts</text>
+
+          <rect x="18" y="168" width="129" height="26" rx="2" fill="#EBDCC2" stroke="#D2AE82" stroke-width="0.8" />
+          <text x="82" y="184" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.5" font-weight="700" fill="#3A2619">Zero Biometric Storage</text>
+
+          <!-- WebSocket Channel -->
+          <line x1="155" y1="85" x2="195" y2="85" stroke="#B8772F" stroke-width="1.8" stroke-dasharray="3 2" />
+          <polygon points="195,85 188,81 188,89" fill="#B8772F" />
+          <text x="175" y="78" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.2" font-weight="700" fill="#3A2619">/ws/stream</text>
+          <text x="175" y="98" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.5" fill="#6B4630">JSON Stream</text>
+
+          <!-- FastAPI Core Container -->
+          <rect x="195" y="10" width="315" height="195" rx="4" fill="url(#gradFastAPI)" stroke="#D2AE82" stroke-width="1.2" filter="url(#shadowBox)" />
+          <rect x="195" y="10" width="315" height="22" rx="4" fill="#3A2619" />
+          <text x="352" y="24" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7.5" font-weight="700" fill="#EBDCC2">FASTAPI ASYNC CORE ENGINE (PYTHON 3.11)</text>
+
+          <!-- Vision Sub-box -->
+          <rect x="205" y="38" width="145" height="66" rx="2" fill="#FFFFFF" stroke="#D2AE82" stroke-width="0.8" />
+          <text x="211" y="50" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="700" fill="#1C1310">Spatial Computer Vision</text>
+          <text x="211" y="60" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">• OpenCV Haar Frontal Face</text>
+          <text x="211" y="70" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">• Euclidean Centroid Tracker</text>
+          <text x="211" y="80" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">• 3.0s Occlusion Grace State</text>
+          <text x="211" y="90" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">• 10.0s Integral Presence Gate</text>
+
+          <!-- Audio Sub-box -->
+          <rect x="358" y="38" width="142" height="66" rx="2" fill="#FFFFFF" stroke="#D2AE82" stroke-width="0.8" />
+          <text x="364" y="50" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="700" fill="#1C1310">Acoustic Signal Processing</text>
+          <text x="364" y="60" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">• Librosa / NumPy Float32 RMS</text>
+          <text x="364" y="70" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">• Real-time dBFS Clamping</text>
+          <text x="364" y="80" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">• Spectral Centroid Formants</text>
+          <text x="364" y="90" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">• 16-Band Logarithmic FFT</text>
+
+          <!-- Multimodal Fusion Banner -->
+          <rect x="205" y="110" width="295" height="52" rx="2" fill="#F2E7D5" stroke="#B8772F" stroke-width="1" />
+          <text x="212" y="122" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="700" fill="#3A2619">Multimodal Cognitive Equilibrium Fusion</text>
+          <text x="212" y="133" font-family="'JetBrains Mono', monospace" font-size="6.2" font-weight="600" fill="#1C1310">Fused = 0.45·Visual + 0.35·Motion + 0.20·Audio - InactivityPenalty</text>
+          <text x="212" y="144" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">Low-Pass Exponential Moving Average (EMA α=0.25) · 30-sample rolling trends</text>
+          <text x="212" y="154" font-family="'Instrument Sans', sans-serif" font-size="6.2" fill="#6B4630">Trend Modes: Steady Rhythm · Interactive Peak · Reflective Silence · Attention Drop</text>
+
+          <!-- Persistence Strip -->
+          <rect x="205" y="168" width="295" height="26" rx="2" fill="#EBDCC2" stroke="#D2AE82" stroke-width="0.8" />
+          <text x="352" y="184" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.5" font-weight="600" fill="#3A2619">
+            SQLite WAL Database: attendance_logs · engagement_sessions · ai_insights
+          </text>
+
+          <!-- Right Arrow to AI Agent -->
+          <line x1="510" y1="85" x2="538" y2="85" stroke="#B8772F" stroke-width="1.8" />
+          <polygon points="538,85 531,81 531,89" fill="#B8772F" />
+
+          <!-- AI Agent Container -->
+          <rect x="540" y="10" width="170" height="195" rx="4" fill="#FAF6EE" stroke="#D2AE82" stroke-width="1.2" filter="url(#shadowBox)" />
+          <rect x="540" y="10" width="170" height="22" rx="4" fill="url(#gradAI)" />
+          <text x="625" y="24" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7.5" font-weight="700" fill="#FAF6EE">PEDAGOGICAL AGENT GATEWAY</text>
+
+          <rect x="548" y="38" width="154" height="36" rx="2" fill="#FFFFFF" stroke="#D2AE82" stroke-width="0.8" />
+          <text x="554" y="49" font-family="'JetBrains Mono', monospace" font-size="6.5" font-weight="700" fill="#1C1310">Rate-Limiting Cache</text>
+          <text x="554" y="58" font-family="'Instrument Sans', sans-serif" font-size="6" fill="#6B4630">10.0s Calibrated Throttling</text>
+          <text x="554" y="66" font-family="'Instrument Sans', sans-serif" font-size="6" fill="#6B4630">Trend Shift Event Driven</text>
+
+          <rect x="548" y="79" width="154" height="42" rx="2" fill="#FFFFFF" stroke="#D2AE82" stroke-width="0.8" />
+          <text x="554" y="90" font-family="'JetBrains Mono', monospace" font-size="6.5" font-weight="700" fill="#B8772F">Cloud LLM Orchestration</text>
+          <text x="554" y="100" font-family="'Instrument Sans', sans-serif" font-size="6" fill="#6B4630">• Groq Llama 3.1 8B (180ms)</text>
+          <text x="554" y="108" font-family="'Instrument Sans', sans-serif" font-size="6" fill="#6B4630">• Gemini 3.5 Flash / Flash-Lite</text>
+          <text x="554" y="116" font-family="'Instrument Sans', sans-serif" font-size="6" fill="#6B4630">• Strict max_tokens=120 JSON</text>
+
+          <rect x="548" y="126" width="154" height="44" rx="2" fill="#F2E7D5" stroke="#B8772F" stroke-width="0.8" />
+          <text x="554" y="137" font-family="'JetBrains Mono', monospace" font-size="6.5" font-weight="700" fill="#1C1310">Deterministic 6-State Matrix</text>
+          <text x="554" y="147" font-family="'Instrument Sans', sans-serif" font-size="6" fill="#6B4630">• Air-gapped offline fallback</text>
+          <text x="554" y="155" font-family="'Instrument Sans', sans-serif" font-size="6" fill="#6B4630">• HTTP 429 Quota resilience</text>
+          <text x="554" y="163" font-family="'Instrument Sans', sans-serif" font-size="6" fill="#6B4630">• Instant sub-millisecond response</text>
+
+          <rect x="548" y="174" width="154" height="22" rx="2" fill="#EBDCC2" stroke="#D2AE82" stroke-width="0.8" />
+          <text x="625" y="188" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.2" font-weight="600" fill="#3A2619">Logged in ai_insights</text>
+        </svg>
+        <div class="diagram-caption">FIGURE 1.1: SYSTEM TOPOLOGY, IN-MEMORY PROCESSING BOUNDARIES &amp; AIR-GAPPED SQLITE PERSISTENCE</div>
+      </div>
+
+      <!-- Security Deep Dive (2 Cards) -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title-serif">§ 1.1 In-Memory Ephemeral Gating</div>
+          <p>
+            The architecture strictly enforces an <strong>ephemeral memory lifecycle</strong>. High-resolution WebRTC frames are decoded in Python memory via OpenCV's C-bindings. As soon as spatial coordinates $(x, y, w, h)$ are mapped to dimensionless centroids $(cX, cY)$, the pixel buffer is garbage-collected.
+          </p>
+          <p>
+            Participants are designated with session-scoped pseudonymized identifiers (e.g. <code>Participant_01</code>). If a participant leaves the sensory aperture for more than 3.0 seconds, the corresponding track instance is purged, guaranteeing zero retrospective biometric re-identification.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-title-serif">§ 1.2 SQLite WAL Mode Concurrency</div>
+          <p>
+            High-frequency telemetry logging creates significant I/O pressure in traditional file locks. <em>Atelier // Presence</em> configures SQLite with <strong>Write-Ahead Logging</strong>:
+          </p>
+          <div class="formula-block">
+            <div class="formula-math">PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;</div>
+            <div class="formula-desc">Decouples concurrent reader queries from the append-only write loop.</div>
+          </div>
+          <p>
+            A dedicated shared-memory index (<code>.db-shm</code>) coordinates reader snapshots against the WAL buffer (<code>.db-wal</code>). Administrative users can stream real-time CSV analytics without blocking the 10 FPS telemetry daemon.
+          </p>
+        </div>
+      </div>
+
+      <div class="running-footer">
+        <span>ATELIER ARCHITECTURAL PAPERS // MONOGRAPH 042-S</span>
+        <span>SECTION 01: SYSTEM PARADIGM &amp; SECURITY</span>
+        <span class="folio-pill">PAGE 02 OF 07</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 3: COMPUTER VISION & SPATIAL PIPELINE                                -->
+  <!-- ========================================================================= -->
+  <div class="page" id="page-3">
+    <div class="grain-layer"></div>
+    <div class="content-wrap">
+      
+      <div class="running-header">
+        <span>ATELIER // PRESENCE · ARCHITECTURAL SPECIFICATION</span>
+        <span class="doc-id">SECTION 02: COMPUTER VISION &amp; SPATIAL PIPELINE</span>
+        <span>PAGE 03</span>
+      </div>
+
+      <div class="page-title-block">
+        <div class="page-num-label">SPATIAL TELEMETRY &amp; ATTENDANCE VERIFICATION</div>
+        <h2 class="page-heading">02 / Computer Vision &amp; Spatial Centroid Pipeline</h2>
+        <div class="page-subheading">
+          Multi-scale Haar feature detection, Euclidean distance matrix bipartite gating, and the 10.0s sustained presence state machine.
+        </div>
+      </div>
+
+      <!-- Formulation Cards -->
+      <div class="grid-2" style="margin-bottom: 2mm;">
+        <div class="card" style="padding: 2mm 3mm;">
+          <div class="card-title-mono">CENTROID SPATIAL PROJECTION</div>
+          <p style="font-size: 7.2pt;">
+            For detected bounding boxes $B_k = (x_k, y_k, w_k, h_k)$ from the Haar Cascade classifier, geometric center mass points $(cX_k, cY_k)$ are calculated:
+          </p>
+          <div class="formula-block" style="margin: 1.5mm 0;">
+            <div class="formula-math">cX_k = x_k + \frac{w_k}{2}, \quad cY_k = y_k + \frac{h_k}{2}</div>
+          </div>
+        </div>
+
+        <div class="card" style="padding: 2mm 3mm;">
+          <div class="card-title-mono">PAIRWISE EUCLIDEAN DISTANCE MATRIX</div>
+          <p style="font-size: 7.2pt;">
+            Between active tracks $i \in \{1 \dots M\}$ and incoming detections $j \in \{1 \dots N\}$, the bipartite distance matrix is evaluated:
+          </p>
+          <div class="formula-block" style="margin: 1.5mm 0;">
+            <div class="formula-math">D_{i,j} = \sqrt{(cX_{\text{track}, i} - cX_{\text{det}, j})^2 + (cY_{\text{track}, i} - cY_{\text{det}, j})^2}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SVG Centroid Matching & Distance Matrix Diagram -->
+      <div class="diagram-frame" style="margin-bottom: 2.5mm;">
+        <svg class="svg-diagram" viewBox="0 0 720 195" width="100%" height="185">
+          <!-- Left Panel: Coordinate Frame & Gating Circles -->
+          <g transform="translate(10, 10)">
+            <rect x="0" y="0" width="370" height="165" rx="3" fill="#1C1310" stroke="#3A2619" stroke-width="1" />
+            
+            <!-- Grid Lines -->
+            <line x1="0" y1="41" x2="370" y2="41" stroke="#3A2619" stroke-width="0.8" stroke-dasharray="2 2" />
+            <line x1="0" y1="82" x2="370" y2="82" stroke="#3A2619" stroke-width="0.8" stroke-dasharray="2 2" />
+            <line x1="0" y1="123" x2="370" y2="123" stroke="#3A2619" stroke-width="0.8" stroke-dasharray="2 2" />
+            <line x1="92" y1="0" x2="92" y2="165" stroke="#3A2619" stroke-width="0.8" stroke-dasharray="2 2" />
+            <line x1="185" y1="0" x2="185" y2="165" stroke="#3A2619" stroke-width="0.8" stroke-dasharray="2 2" />
+            <line x1="278" y1="0" x2="278" y2="165" stroke="#3A2619" stroke-width="0.8" stroke-dasharray="2 2" />
+
+            <text x="6" y="14" font-family="'JetBrains Mono', monospace" font-size="6.5" fill="#D2AE82">ORIGIN (0,0)</text>
+            <text x="360" y="158" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="6.5" fill="#D2AE82">CAMERA FRAME (640×360)</text>
+
+            <!-- Track 1 at t-1 (cX=85, cY=60) -->
+            <circle cx="85" cy="60" r="45" fill="rgba(184, 119, 47, 0.08)" stroke="#B8772F" stroke-width="0.8" stroke-dasharray="2 2" />
+            <circle cx="85" cy="60" r="4" fill="#B8772F" />
+            <text x="75" y="50" font-family="'JetBrains Mono', monospace" font-size="7.2" font-weight="700" fill="#EBDCC2">T₁ (t-1)</text>
+
+            <!-- Detection 1 at t (cX=93, cY=66) -->
+            <circle cx="93" cy="66" r="4" fill="#3F624D" />
+            <line x1="85" y1="60" x2="93" y2="66" stroke="#3F624D" stroke-width="1.8" />
+            <text x="102" y="73" font-family="'JetBrains Mono', monospace" font-size="7.2" font-weight="700" fill="#9CD8B0">D₁ (t)</text>
+            <text x="65" y="80" font-family="'JetBrains Mono', monospace" font-size="6" fill="#D2AE82">Δ = 10.0 px (Matched)</text>
+
+            <!-- Track 2 at t-1 (cX=230, cY=85) -->
+            <circle cx="230" cy="85" r="45" fill="rgba(184, 119, 47, 0.08)" stroke="#B8772F" stroke-width="0.8" stroke-dasharray="2 2" />
+            <circle cx="230" cy="85" r="4" fill="#B8772F" />
+            <text x="220" y="75" font-family="'JetBrains Mono', monospace" font-size="7.2" font-weight="700" fill="#EBDCC2">T₂ (t-1)</text>
+
+            <!-- Detection 2 at t (cX=222, cY=91) -->
+            <circle cx="222" cy="91" r="4" fill="#3F624D" />
+            <line x1="230" y1="85" x2="222" y2="91" stroke="#3F624D" stroke-width="1.8" />
+            <text x="210" y="106" font-family="'JetBrains Mono', monospace" font-size="7.2" font-weight="700" fill="#9CD8B0">D₂ (t)</text>
+            <text x="210" y="116" font-family="'JetBrains Mono', monospace" font-size="6" fill="#D2AE82">Δ = 10.0 px (Matched)</text>
+
+            <!-- Detection 3 at t (cX=320, cY=130) [Unmatched] -->
+            <circle cx="320" cy="130" r="4" fill="#B8772F" />
+            <text x="285" y="126" font-family="'JetBrains Mono', monospace" font-size="7.2" font-weight="700" fill="#E5A967">D₃ [New]</text>
+            <text x="260" y="142" font-family="'JetBrains Mono', monospace" font-size="6" fill="#D2AE82">D > 140px Gate → Track_03</text>
+
+            <text x="12" y="155" font-family="'JetBrains Mono', monospace" font-size="6.2" fill="#B8772F">D_max = 140 px Bipartite Gate Radius</text>
+          </g>
+
+          <!-- Right Panel: Bipartite Matrix & Hungarian Pairing Table -->
+          <g transform="translate(395, 10)">
+            <rect x="0" y="0" width="315" height="165" rx="3" fill="#FAF6EE" stroke="#D2AE82" stroke-width="1" />
+            <rect x="0" y="0" width="315" height="20" rx="3" fill="#EBDCC2" stroke="#D2AE82" stroke-width="0.8" />
+            <text x="12" y="14" font-family="'JetBrains Mono', monospace" font-size="7.2" font-weight="700" fill="#1C1310">BIPARTITE EUCLIDEAN ASSIGNMENT MATRIX</text>
+
+            <!-- Table Graphic -->
+            <g transform="translate(15, 26)">
+              <text x="65" y="12" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="700" fill="#3A2619">D₁ (Det 1)</text>
+              <text x="135" y="12" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="700" fill="#3A2619">D₂ (Det 2)</text>
+              <text x="205" y="12" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="700" fill="#3A2619">D₃ (Det 3)</text>
+              <text x="265" y="12" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="700" fill="#B8772F">Action</text>
+
+              <line x1="0" y1="18" x2="285" y2="18" stroke="#D2AE82" stroke-width="1" />
+
+              <!-- Row 1: T1 -->
+              <text x="0" y="34" font-family="'JetBrains Mono', monospace" font-size="7.2" font-weight="700" fill="#1C1310">T₁ (Trk 1)</text>
+              <rect x="38" y="23" width="55" height="16" rx="2" fill="#EBDCC2" stroke="#3F624D" stroke-width="1.2" />
+              <text x="65" y="34" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7.2" font-weight="700" fill="#3F624D">10.0 px*</text>
+              <text x="135" y="34" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7.2" fill="#8F7263">147.1 px</text>
+              <text x="205" y="34" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7.2" fill="#8F7263">246.8 px</text>
+              <text x="265" y="34" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.5" font-weight="600" fill="#3F624D">Pair T₁→D₁</text>
+
+              <line x1="0" y1="44" x2="285" y2="44" stroke="#D2AE82" stroke-width="0.6" stroke-dasharray="2 2" />
+
+              <!-- Row 2: T2 -->
+              <text x="0" y="60" font-family="'JetBrains Mono', monospace" font-size="7.2" font-weight="700" fill="#1C1310">T₂ (Trk 2)</text>
+              <text x="65" y="60" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7.2" fill="#8F7263">138.4 px</text>
+              <rect x="108" y="49" width="55" height="16" rx="2" fill="#EBDCC2" stroke="#3F624D" stroke-width="1.2" />
+              <text x="135" y="60" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7.2" font-weight="700" fill="#3F624D">10.0 px*</text>
+              <text x="205" y="60" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7.2" fill="#8F7263">102.9 px</text>
+              <text x="265" y="60" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.5" font-weight="600" fill="#3F624D">Pair T₂→D₂</text>
+
+              <line x1="0" y1="70" x2="285" y2="70" stroke="#D2AE82" stroke-width="1" />
+
+              <!-- Descriptive Notes -->
+              <g transform="translate(0, 78)">
+                <text x="0" y="10" font-family="'JetBrains Mono', monospace" font-size="6.5" font-weight="700" fill="#B8772F">• Greedy Argmin Pairing Strategy:</text>
+                <text x="0" y="21" font-family="'Instrument Sans', sans-serif" font-size="6.5" fill="#3A2619">Sorted row-minimum distances are assigned subject to gating limit D ≤ 140px.</text>
+                <text x="0" y="32" font-family="'Instrument Sans', sans-serif" font-size="6.5" fill="#3A2619">• Detection D₃ remains unassigned to existing tracks: instantiated as new Track_03.</text>
+                <text x="0" y="43" font-family="'Instrument Sans', sans-serif" font-size="6.5" fill="#3A2619">• Deterministic bipartite matching executes in O(M·N) time under 0.8ms.</text>
+              </g>
+            </g>
+          </g>
+        </svg>
+        <div class="diagram-caption">FIGURE 2.1: CENTROID MAPPING IN CAMERA COORDINATES &amp; DISTANCE MATRIX BIPARTITE GATING</div>
+      </div>
+
+      <!-- State Machine & Verification Cards -->
+      <div class="grid-2">
+        <div class="card" style="border-left: 2.5px solid var(--mocha);">
+          <div class="card-title-serif">§ 2.1 3.0s Occlusion Grace State Machine</div>
+          <p>
+            Studio environments naturally involve student head turns, notebook sketching, and temporary book occlusions. Punitive trackers lose tracking state immediately when a face is occluded for a single frame, resetting participant tenure.
+          </p>
+          <p>
+            <em>Atelier // Presence</em> tracks consecutive missing duration:
+          </p>
+          <div class="formula-block">
+            <div class="formula-math">\Delta t_{\text{disappeared}} = t_{\text{curr}} - t_{\text{last\_seen}}</div>
+            <div class="formula-desc">If $\Delta t_{\text{disappeared}} \le 3.0\text{ s}$, the track remains active in memory. Deregistration occurs strictly when $\Delta t > 3.0\text{ s}$.</div>
+          </div>
+          <p>
+            Additionally, brisk hallway walk-bys through open studio doors are filtered via low-pass horizontal velocity gating: $|v_x| = |(cX_t - cX_{t-1}) / \Delta t| > 65\text{ px/s}$.
+          </p>
+        </div>
+
+        <div class="card" style="border-left: 2.5px solid var(--caramel);">
+          <div class="card-title-serif">§ 2.2 10.0s Sustained Presence Integral</div>
+          <p>
+            To eliminate transient false positives from passing visitors, physical attendance follows a strict temporal integration lifecycle:
+          </p>
+          <div class="formula-block">
+            <div class="formula-math">\text{Duration}(T_i) = t_{\text{curr}} - t_{\text{first\_seen}}</div>
+          </div>
+          <table class="editorial-table">
+            <tr>
+              <th>Duration Window</th>
+              <th>Verification State</th>
+              <th>Ledger Commit</th>
+            </tr>
+            <tr>
+              <td>$0.0\text{ s} \le t < 3.0\text{ s}$</td>
+              <td><span class="tag-badge">Transient (&lt;3s)</span></td>
+              <td>Ephemeral RAM only</td>
+            </tr>
+            <tr>
+              <td>$3.0\text{ s} \le t < 10.0\text{ s}$</td>
+              <td><span class="tag-badge" style="background:#EBDCC2;">Verifying...</span></td>
+              <td>Telemetry stream only</td>
+            </tr>
+            <tr>
+              <td>$t \ge 10.0\text{ s}$</td>
+              <td><span class="tag-badge caramel">Verified Present</span></td>
+              <td><strong>Committed to SQLite</strong></td>
+            </tr>
+          </table>
+          <p style="margin-top: 1.5mm;">
+            Upon crossing the 10.0-second threshold, <code>_auto_commit_verified_attendance()</code> executes an atomic SQLite transaction, logging the participant entry.
+          </p>
+        </div>
+      </div>
+
+      <div class="running-footer">
+        <span>ATELIER ARCHITECTURAL PAPERS // MONOGRAPH 042-S</span>
+        <span>SECTION 02: COMPUTER VISION &amp; SPATIAL PIPELINE</span>
+        <span class="folio-pill">PAGE 03 OF 07</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 4: HEAD POSE & OPTICAL MOTION INACTIVITY ENGINE                       -->
+  <!-- ========================================================================= -->
+  <div class="page" id="page-4">
+    <div class="grain-layer"></div>
+    <div class="content-wrap">
+      
+      <div class="running-header">
+        <span>ATELIER // PRESENCE · ARCHITECTURAL SPECIFICATION</span>
+        <span class="doc-id">SECTION 03: HEAD POSE &amp; OPTICAL MOTION</span>
+        <span>PAGE 04</span>
+      </div>
+
+      <div class="page-title-block">
+        <div class="page-num-label">HEAD POSE ORIENTATION &amp; SOMATIC DYNAMICS</div>
+        <h2 class="page-heading">03 / Head Pose &amp; Optical Motion Inactivity Engine</h2>
+        <div class="page-subheading">
+          Dual-engine solvePnP/geometric fallback, angular cosine attention decay, and normalized $64\times 64$ ROI frame differencing.
+        </div>
+      </div>
+
+      <!-- Theory Cards -->
+      <div class="grid-2" style="margin-bottom: 2mm;">
+        <div class="card" style="border-top: 2.5px solid var(--espresso); padding: 2mm 3mm;">
+          <div class="card-title-mono">DUAL-ENGINE HEAD POSE ARCHITECTURE</div>
+          <p style="font-size: 7.2pt;">
+            <strong>1. MediaPipe FaceMesh (Primary):</strong> Extracts 468 landmarks. Six canonical 3D model coordinates (Nose tip, Chin, Left/Right Eye corners, Left/Right Mouth corners) are mapped via <code>cv2.solvePnP</code> with iterative Levenberg-Marquardt optimization. Rodrigues conversion yields Euler angles $(\theta_y, \theta_p, \theta_r)$.
+          </p>
+          <p style="font-size: 7.2pt; margin-top: 1mm;">
+            <strong>2. Mathematical Geometric Fallback (Air-Gap):</strong> When MediaPipe is uncompiled, estimates orientation from optical axis offsets and bilateral cheek luminance asymmetry:
+          </p>
+          <div class="formula-block" style="margin: 1.5mm 0;">
+            <div class="formula-math">H_{\text{asym}} = \frac{\mu_{\text{left}} - \mu_{\text{right}}}{\mu_{\text{left}} + \mu_{\text{right}}}, \quad \text{Yaw} = 55.0 \cdot H_{\text{asym}} + 12.0 \cdot x_{\text{norm}}</div>
+          </div>
+        </div>
+
+        <div class="card" style="border-top: 2.5px solid var(--caramel); padding: 2mm 3mm;">
+          <div class="card-title-mono">ANGULAR COSINE ATTENTION DECAY</div>
+          <p style="font-size: 7.2pt;">
+            Natural human attention does not collapse precipitously at small head rotations. <em>Atelier // Presence</em> models gaze orientation through a continuous cosine decay:
+          </p>
+          <div class="formula-block" style="margin: 1.5mm 0;">
+            <div class="formula-math">\text{Score}(\theta) = \begin{cases}
+              100.0 & \theta \le 15^\circ \\
+              25.0 + 37.5 \left(1 + \cos\left(\pi \frac{\theta - 15}{30}\right)\right) & 15^\circ < \theta \le 45^\circ \\
+              25.0 & \theta > 45^\circ
+            \end{cases}</div>
+            <div class="formula-desc">Where $\theta = \max(|\theta_y|, |\theta_p|)$. Protected note-taking floor: $\ge 70.0\%$.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SVG Diagram Gaze Cone & ROI Motion Differencing -->
+      <div class="diagram-frame" style="margin-bottom: 2.5mm;">
+        <svg class="svg-diagram" viewBox="0 0 720 190" width="100%" height="180">
+          <!-- Left Panel: Gaze Orientation Cone & Cosine Plot -->
+          <g transform="translate(10, 10)">
+            <rect x="0" y="0" width="345" height="160" rx="3" fill="#FAF6EE" stroke="#D2AE82" stroke-width="1" />
+            <rect x="0" y="0" width="345" height="18" rx="3" fill="#EBDCC2" stroke="#D2AE82" stroke-width="0.8" />
+            <text x="12" y="13" font-family="'JetBrains Mono', monospace" font-size="7" font-weight="700" fill="#1C1310">GAZE ORIENTATION CONE &amp; COSINE ATTENTION DECAY</text>
+
+            <!-- Gaze Cone Graphic -->
+            <g transform="translate(85, 90)">
+              <path d="M 0,0 L -65,-50 A 85 85 0 0 1 65,-50 Z" fill="rgba(107, 70, 48, 0.12)" stroke="#6B4630" stroke-width="0.8" />
+              <path d="M 0,0 L -42,-60 A 75 75 0 0 1 42,-60 Z" fill="rgba(184, 119, 47, 0.2)" stroke="#B8772F" stroke-width="1" />
+              <path d="M 0,0 L -18,-68 A 70 70 0 0 1 18,-68 Z" fill="rgba(63, 98, 77, 0.3)" stroke="#3F624D" stroke-width="1.2" />
+
+              <circle cx="0" cy="0" r="13" fill="#3A2619" stroke="#EBDCC2" stroke-width="1.4" />
+              <circle cx="0" cy="0" r="3.5" fill="#EBDCC2" />
+              <line x1="0" y1="0" x2="0" y2="-72" stroke="#3F624D" stroke-width="2" />
+              <polygon points="0,-76 -3,-70 3,-70" fill="#3F624D" />
+
+              <text x="0" y="-79" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.2" font-weight="700" fill="#3F624D">0° DIRECT FOCUS (100%)</text>
+              <text x="48" y="-38" font-family="'JetBrains Mono', monospace" font-size="5.8" fill="#B8772F">15°-45° COSINE DECAY</text>
+              <text x="50" y="-12" font-family="'JetBrains Mono', monospace" font-size="5.8" fill="#6B4630">>45° PERIPHERAL (25%)</text>
+            </g>
+
+            <!-- Cosine Graph -->
+            <g transform="translate(195, 32)">
+              <rect x="0" y="0" width="138" height="115" rx="2" fill="#FFFFFF" stroke="#D2AE82" stroke-width="0.6" />
+              <line x1="20" y1="95" x2="128" y2="95" stroke="#3A2619" stroke-width="0.8" />
+              <line x1="20" y1="15" x2="20" y2="95" stroke="#3A2619" stroke-width="0.8" />
+              
+              <text x="8" y="20" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#3A2619">100%</text>
+              <text x="8" y="78" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#3A2619">25%</text>
+              <text x="20" y="105" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#3A2619">0°</text>
+              <text x="50" y="105" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#B8772F">15°</text>
+              <text x="95" y="105" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#3A2619">45°</text>
+
+              <path d="M 20,20 L 50,20 C 65,20 80,75 95,75 L 128,75" fill="none" stroke="#B8772F" stroke-width="1.8" />
+              <circle cx="50" cy="20" r="2.5" fill="#3F624D" />
+              <circle cx="95" cy="75" r="2.5" fill="#6B4630" />
+              <text x="70" y="14" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" font-weight="700" fill="#3A2619">S(θ) Decay</text>
+            </g>
+          </g>
+
+          <!-- Right Panel: ROI Differencing & Inactivity Engine -->
+          <g transform="translate(365, 10)">
+            <rect x="0" y="0" width="345" height="160" rx="3" fill="#FAF6EE" stroke="#D2AE82" stroke-width="1" />
+            <rect x="0" y="0" width="345" height="18" rx="3" fill="#EBDCC2" stroke="#D2AE82" stroke-width="0.8" />
+            <text x="12" y="13" font-family="'JetBrains Mono', monospace" font-size="7" font-weight="700" fill="#1C1310">OPTICAL MOTION DIFFERENCING &amp; INACTIVITY ENGINE</text>
+
+            <g transform="translate(15, 26)">
+              <!-- Frame t-1 -->
+              <rect x="0" y="8" width="44" height="44" rx="2" fill="#EBDCC2" stroke="#6B4630" stroke-width="0.8" />
+              <circle cx="22" cy="30" r="13" fill="#D2AE82" />
+              <text x="22" y="64" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.8" fill="#3A2619">ROI I_{t-1}</text>
+
+              <text x="54" y="34" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="12" fill="#B8772F">−</text>
+
+              <!-- Frame t -->
+              <rect x="66" y="8" width="44" height="44" rx="2" fill="#EBDCC2" stroke="#6B4630" stroke-width="0.8" />
+              <circle cx="24" cy="28" r="13" fill="#D2AE82" />
+              <text x="88" y="64" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.8" fill="#3A2619">ROI I_t</text>
+
+              <text x="120" y="34" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="12" fill="#B8772F">=</text>
+
+              <!-- Diff Mask -->
+              <rect x="132" y="8" width="44" height="44" rx="2" fill="#1C1310" stroke="#B8772F" stroke-width="1" />
+              <rect x="138" y="21" width="4" height="4" fill="#E5A967" />
+              <rect x="142" y="23" width="3" height="3" fill="#E5A967" />
+              <rect x="162" y="34" width="5" height="4" fill="#E5A967" />
+              <rect x="153" y="40" width="4" height="3" fill="#E5A967" />
+              <text x="154" y="64" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.8" fill="#B8772F">|ΔI| > 14</text>
+            </g>
+
+            <!-- Inactivity Timeline -->
+            <g transform="translate(15, 96)">
+              <rect x="0" y="0" width="315" height="52" rx="2" fill="#FFFFFF" stroke="#D2AE82" stroke-width="0.6" />
+              <text x="10" y="11" font-family="'JetBrains Mono', monospace" font-size="6.5" font-weight="700" fill="#3A2619">
+                STILLNESS ENERGY: E &lt; 0.03 → INACTIVITY PENALTY TIMELINE
+              </text>
+
+              <rect x="10" y="18" width="130" height="11" fill="#EBDCC2" rx="1" />
+              <text x="75" y="26" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.5" fill="#3A2619">0.0s – 8.0s Grace (Penalty = 0.0)</text>
+
+              <rect x="140" y="18" width="155" height="11" fill="rgba(184, 119, 47, 0.25)" stroke="#B8772F" stroke-width="0.8" rx="1" />
+              <text x="217" y="26" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.5" font-weight="700" fill="#B8772F">t > 8.0s: Penalty = min(25.0, 3.5·(t - 8.0))</text>
+
+              <text x="10" y="41" font-family="'Instrument Sans', sans-serif" font-size="5.8" fill="#6B4630">
+                Subtle movement (nodding, writing: 0.03 ≤ E ≤ 0.25) yields peak alertness score: 75 + 20·sin(π·(E-0.03)/0.22).
+              </text>
+            </g>
+          </g>
+        </svg>
+        <div class="diagram-caption">FIGURE 3.1: 3D HEAD POSE ORIENTATION CONES, COSINE ATTENTION DECAY, AND MOTION ENERGY PENALTIES</div>
+      </div>
+
+      <!-- Narrative Cards -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title-serif">§ 3.1 Note-Taking &amp; Downward Gaze Protection</div>
+          <p>
+            Standard computer vision systems routinely penalize participants who glance down at their physical notebooks, misclassifying scholarly drafting as inattention. <em>Atelier // Presence</em> detects downwards tilt by computing the facial vertical luminance gradient:
+          </p>
+          <div class="formula-block">
+            <div class="formula-math">R_{TB} = \frac{\mu_{\text{forehead}}}{\mu_{\text{chin}}}, \quad \text{is\_note\_taking} = (dy > 4.5\text{ px}) \lor (R_{TB} < 0.77)</div>
+          </div>
+          <p>
+            When active, the participant is classified as <code>Note-Taking / Downward Focus</code>, and the attention score is clamped to a healthy pedagogical baseline ($\ge 70\%$).
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-title-serif">§ 3.2 ROI Optical Flow Differencing</div>
+          <p>
+            Each tracked face ROI is scaled to a standard $64 \times 64$ grid and filtered with a Gaussian kernel ($\sigma=1.0$). Absolute differencing isolates microscopic motor gestures:
+          </p>
+          <div class="formula-block">
+            <div class="formula-math">E_{\text{ROI}} = \frac{1}{64 \times 64} \sum_{x,y} \mathbb{I}(|I_t(x,y) - I_{t-1}(x,y)| > 14)</div>
+          </div>
+          <p>
+            Continuous postural stagnation for over 8.0 seconds accumulates an inactivity penalty, gently lowering overall equilibrium and alerting the pedagogical agent to recommend a posture break.
+          </p>
+        </div>
+      </div>
+
+      <div class="running-footer">
+        <span>ATELIER ARCHITECTURAL PAPERS // MONOGRAPH 042-S</span>
+        <span>SECTION 03: HEAD POSE &amp; OPTICAL MOTION</span>
+        <span class="folio-pill">PAGE 04 OF 07</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 5: ACOUSTIC INTELLIGENCE & WEBAUDIO PIPELINE                         -->
+  <!-- ========================================================================= -->
+  <div class="page" id="page-5">
+    <div class="grain-layer"></div>
+    <div class="content-wrap">
+      
+      <div class="running-header">
+        <span>ATELIER // PRESENCE · ARCHITECTURAL SPECIFICATION</span>
+        <span class="doc-id">SECTION 04: ACOUSTIC INTELLIGENCE &amp; DSP</span>
+        <span>PAGE 05</span>
+      </div>
+
+      <div class="page-title-block">
+        <div class="page-num-label">ACOUSTIC SPECTROMETRY &amp; DSP PIPELINE</div>
+        <h2 class="page-heading">04 / Acoustic Intelligence &amp; WebAudio DSP Pipeline</h2>
+        <div class="page-subheading">
+          WebAudio AnalyserNode PCM streaming, Librosa RMS/dBFS energy, and the 16-band logarithmic spectral equalizer.
+        </div>
+      </div>
+
+      <!-- Formulation Cards -->
+      <div class="grid-3" style="margin-bottom: 2mm;">
+        <div class="card" style="padding: 2mm 2.8mm;">
+          <div class="card-title-mono">ROOT-MEAN-SQUARE (RMS)</div>
+          <div class="formula-block" style="margin: 1.5mm 0;">
+            <div class="formula-math">\text{RMS} = \sqrt{\frac{1}{N}\sum_{i=1}^N x_i^2}</div>
+          </div>
+          <p style="font-size: 7pt;">Real-time energy over $N=512$ float32 PCM samples in $[-1.0, 1.0]$.</p>
+        </div>
+
+        <div class="card" style="padding: 2mm 2.8mm;">
+          <div class="card-title-mono">DECIBELS FULL SCALE (dBFS)</div>
+          <div class="formula-block" style="margin: 1.5mm 0;">
+            <div class="formula-math">\text{dBFS} = 20\log_{10}(\max(\text{RMS}, 10^{-6}))</div>
+          </div>
+          <p style="font-size: 7pt;">Calibrated silence threshold set at $-42.0\text{ dBFS}$ floor.</p>
+        </div>
+
+        <div class="card" style="padding: 2mm 2.8mm;">
+          <div class="card-title-mono">SPECTRAL CENTROID ($f_c$)</div>
+          <div class="formula-block" style="margin: 1.5mm 0;">
+            <div class="formula-math">f_c = \frac{\sum_k f_k |X(k)|}{\sum_k |X(k)|}</div>
+          </div>
+          <p style="font-size: 7pt;">Center of mass discriminating voice from ambient HVAC noise.</p>
+        </div>
+      </div>
+
+      <!-- SVG 16-Band Equalizer Diagram -->
+      <div class="diagram-frame" style="margin-bottom: 2.5mm;">
+        <svg class="svg-diagram" viewBox="0 0 720 195" width="100%" height="185">
+          <rect x="0" y="0" width="720" height="165" rx="3" fill="#1C1310" stroke="#3A2619" stroke-width="1" />
+
+          <!-- Speech Passband Bracket (Bins 3 to 10: 210Hz to 3900Hz) -->
+          <rect x="160" y="15" width="330" height="125" fill="rgba(184, 119, 47, 0.12)" stroke="#B8772F" stroke-width="0.8" stroke-dasharray="3 2" />
+          <text x="325" y="26" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.8" font-weight="700" fill="#E5A967">
+            HUMAN SPEECH FORMANT PASSBAND (300 Hz – 3400 Hz) // VAD QUALIFIED
+          </text>
+
+          <!-- dB Grid Lines -->
+          <line x1="45" y1="35" x2="705" y2="35" stroke="#3A2619" stroke-width="0.7" stroke-dasharray="2 2" />
+          <text x="38" y="37" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="5.8" fill="#8F7263">0 dB</text>
+
+          <line x1="45" y1="68" x2="705" y2="68" stroke="#3A2619" stroke-width="0.7" stroke-dasharray="2 2" />
+          <text x="38" y="70" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="5.8" fill="#8F7263">-18 dB</text>
+
+          <line x1="45" y1="100" x2="705" y2="100" stroke="#3A2619" stroke-width="0.7" stroke-dasharray="2 2" />
+          <text x="38" y="102" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="5.8" fill="#8F7263">-36 dB</text>
+
+          <!-- Silence Floor Line (-42 dBFS) -->
+          <line x1="45" y1="115" x2="705" y2="115" stroke="#9E5B26" stroke-width="1.2" stroke-dasharray="3 3" />
+          <text x="705" y="112" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="6.2" font-weight="700" fill="#E5A967">
+            VAD SILENCE FLOOR: -42.0 dBFS
+          </text>
+
+          <!-- 16 Frequency Bars -->
+          <!-- Bin 0: 60-95Hz -->
+          <rect x="52" y="122" width="28" height="20" rx="2" fill="#6B4630" />
+          <text x="66" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#D2AE82">B0: 60</text>
+
+          <!-- Bin 1: 95-140Hz -->
+          <rect x="93" y="110" width="28" height="32" rx="2" fill="#6B4630" />
+          <text x="107" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#D2AE82">B1: 95</text>
+
+          <!-- Bin 2: 140-210Hz -->
+          <rect x="134" y="90" width="28" height="52" rx="2" fill="#B8772F" />
+          <text x="148" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#D2AE82">B2: 140</text>
+
+          <!-- Bin 3: 210-310Hz -->
+          <rect x="175" y="68" width="28" height="74" rx="2" fill="#B8772F" />
+          <text x="189" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#EBDCC2">B3: 210</text>
+
+          <!-- Bin 4: 310-460Hz (440Hz Concert A peak) -->
+          <rect x="216" y="36" width="28" height="106" rx="2" fill="#E5A967" stroke="#FAF6EE" stroke-width="1.2" />
+          <text x="230" y="30" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.2" font-weight="700" fill="#FAF6EE">440Hz</text>
+          <text x="230" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" font-weight="700" fill="#E5A967">B4: 310</text>
+
+          <!-- Bin 5: 460-680Hz -->
+          <rect x="257" y="52" width="28" height="90" rx="2" fill="#B8772F" />
+          <text x="271" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#EBDCC2">B5: 460</text>
+
+          <!-- Bin 6: 680-1000Hz -->
+          <rect x="298" y="58" width="28" height="84" rx="2" fill="#B8772F" />
+          <text x="312" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#EBDCC2">B6: 680</text>
+
+          <!-- Bin 7: 1000-1450Hz -->
+          <rect x="339" y="45" width="28" height="97" rx="2" fill="#E5A967" />
+          <text x="353" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#EBDCC2">B7: 1.0k</text>
+
+          <!-- Bin 8: 1450-2100Hz -->
+          <rect x="380" y="65" width="28" height="77" rx="2" fill="#B8772F" />
+          <text x="394" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#EBDCC2">B8: 1.4k</text>
+
+          <!-- Bin 9: 2100-2900Hz -->
+          <rect x="421" y="76" width="28" height="66" rx="2" fill="#B8772F" />
+          <text x="435" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#EBDCC2">B9: 2.1k</text>
+
+          <!-- Bin 10: 2900-3900Hz -->
+          <rect x="462" y="86" width="28" height="56" rx="2" fill="#B8772F" />
+          <text x="476" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#EBDCC2">B10: 2.9k</text>
+
+          <!-- Bin 11: 3900-5000Hz -->
+          <rect x="503" y="104" width="28" height="38" rx="2" fill="#6B4630" />
+          <text x="517" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#D2AE82">B11: 3.9k</text>
+
+          <!-- Bin 12: 5000-6200Hz -->
+          <rect x="544" y="110" width="28" height="32" rx="2" fill="#6B4630" />
+          <text x="558" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#D2AE82">B12: 5.0k</text>
+
+          <!-- Bin 13: 6200-7200Hz -->
+          <rect x="585" y="118" width="28" height="24" rx="2" fill="#6B4630" />
+          <text x="599" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#D2AE82">B13: 6.2k</text>
+
+          <!-- Bin 14: 7200-8000Hz -->
+          <rect x="626" y="124" width="28" height="18" rx="2" fill="#3A2619" />
+          <text x="640" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#D2AE82">B14: 7.2k</text>
+
+          <!-- Bin 15: 8000-9500Hz -->
+          <rect x="667" y="128" width="28" height="14" rx="2" fill="#3A2619" />
+          <text x="681" y="152" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.2" fill="#D2AE82">B15: 8.0k</text>
+
+          <!-- Spectral Centroid Marker -->
+          <line x1="353" y1="12" x2="353" y2="42" stroke="#FAF6EE" stroke-width="1.5" />
+          <polygon points="353,44 350,38 356,38" fill="#FAF6EE" />
+          <text x="353" y="8" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.2" font-weight="700" fill="#FAF6EE">
+            SPECTRAL CENTROID fc = 1240 Hz
+          </text>
+        </svg>
+        <div class="diagram-caption">FIGURE 4.1: 16-BAND LOGARITHMIC SPECTRAL EQUALIZER &amp; SPEECH FORMANT PASSBAND (CONCERT A PEAK AT BIN 4)</div>
+      </div>
+
+      <!-- Frequency Table & Speech Qualification Cards -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title-serif">§ 4.1 Frequency Band Specifications</div>
+          <table class="editorial-table">
+            <tr><th>Band</th><th>Frequency</th><th>Acoustic Role</th></tr>
+            <tr><td><strong>Bin 0–1</strong></td><td>60 Hz – 140 Hz</td><td>HVAC ambient rumble &amp; low sub-bass floor</td></tr>
+            <tr><td><strong>Bin 2–3</strong></td><td>140 Hz – 310 Hz</td><td>Male &amp; female fundamental vocal pitch ($F_0$)</td></tr>
+            <tr><td><strong>Bin 4</strong></td><td>310 Hz – 460 Hz</td><td><strong>Vowel body (440 Hz Concert A resonance)</strong></td></tr>
+            <tr><td><strong>Bin 5–6</strong></td><td>460 Hz – 1000 Hz</td><td>Formant $F_1$ low/high vowels ('o', 'u', 'a')</td></tr>
+            <tr><td><strong>Bin 7–8</strong></td><td>1000 Hz – 2100 Hz</td><td>Vocal clarity &amp; Formant $F_2$ ('e', 'i')</td></tr>
+            <tr><td><strong>Bin 9–10</strong></td><td>2100 Hz – 3900 Hz</td><td>Projection, Formant $F_3$, speech intelligibility</td></tr>
+            <tr><td><strong>Bin 11–12</strong></td><td>3900 Hz – 6200 Hz</td><td>Consonant attack &amp; high sibilance ('s', 'sh')</td></tr>
+            <tr><td><strong>Bin 13–15</strong></td><td>6200 Hz – 9500 Hz</td><td>Studio air shimmer &amp; room reflections</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-title-serif">§ 4.2 Speech Formant Discrimination</div>
+          <p>
+            Unlike naive volume meters that spike when a door slams or paper rustles, the <em>AudioAnalyzer</em> evaluates acoustic qualification across two orthogonal axes:
+          </p>
+          <div class="formula-block">
+            <div class="formula-math">\text{is\_speech} = (\text{dBFS} > -42.0\text{ dBFS}) \land (300\text{ Hz} \le f_c \le 3400\text{ Hz})</div>
+            <div class="formula-desc">True speech requires both sufficient decibel energy and spectral centroid alignment.</div>
+          </div>
+          <p>
+            When active speech is detected, the acoustic score feeds into the Multimodal Equilibrium Formula at 20% weight, signaling participatory studio dialogue.
+          </p>
+        </div>
+      </div>
+
+      <div class="running-footer">
+        <span>ATELIER ARCHITECTURAL PAPERS // MONOGRAPH 042-S</span>
+        <span>SECTION 04: ACOUSTIC DSP</span>
+        <span class="folio-pill">PAGE 05 OF 07</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 6: MULTIMODAL COGNITIVE EQUILIBRIUM & PEDAGOGICAL AI                 -->
+  <!-- ========================================================================= -->
+  <div class="page" id="page-6">
+    <div class="grain-layer"></div>
+    <div class="content-wrap">
+      
+      <div class="running-header">
+        <span>ATELIER // PRESENCE · ARCHITECTURAL SPECIFICATION</span>
+        <span class="doc-id">SECTION 05: COGNITIVE EQUILIBRIUM &amp; AI</span>
+        <span>PAGE 06</span>
+      </div>
+
+      <div class="page-title-block">
+        <div class="page-num-label">FUSION MATHEMATICS &amp; PEDAGOGICAL DECISION SUPPORT</div>
+        <h2 class="page-heading">05 / Multimodal Cognitive Equilibrium &amp; Advisory AI</h2>
+        <div class="page-subheading">
+          Fused Equilibrium Formula, low-pass Exponential Moving Average ($\alpha=0.25$), and rate-protected LLM pacing.
+        </div>
+      </div>
+
+      <!-- Fusion Formula Callout -->
+      <div class="card-crema" style="margin-bottom: 2mm; padding: 2mm 3.2mm; border: 1.2px solid var(--latte);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1mm;">
+          <span class="card-title-mono">FUSED COGNITIVE EQUILIBRIUM FORMULATION</span>
+          <span class="tag-badge caramel">EXPONENTIAL SMOOTHING α = 0.25</span>
+        </div>
+        <div class="formula-math" style="font-size: 8.8pt; color: var(--espresso); margin: 1mm 0;">
+          \text{Fused Score}_{\text{raw}} = 0.45 \cdot \text{Visual Attention} + 0.35 \cdot \text{Movement Score} + 0.20 \cdot \text{Acoustic Score} - \text{Inactivity Penalty}
+        </div>
+        <div class="formula-math" style="font-size: 8pt; color: var(--caramel); margin-top: 1mm;">
+          \text{EMA}_t = 0.25 \cdot \text{Fused Score}_{\text{raw}, t} + 0.75 \cdot \text{EMA}_{t-1}
+        </div>
+      </div>
+
+      <!-- SVG Fusion & EMA Smoothing Diagram -->
+      <div class="diagram-frame" style="margin-bottom: 2.5mm;">
+        <svg class="svg-diagram" viewBox="0 0 720 175" width="100%" height="165">
+          <rect x="0" y="0" width="720" height="150" rx="3" fill="#FAF6EE" stroke="#D2AE82" stroke-width="1" />
+
+          <!-- Equilibrium Corridor (65 to 85) -->
+          <rect x="50" y="34" width="650" height="24" fill="rgba(63, 98, 77, 0.12)" stroke="#3F624D" stroke-width="0.8" stroke-dasharray="3 2" />
+          <text x="695" y="45" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="6.2" font-weight="700" fill="#3F624D">
+            EQUILIBRIUM CORRIDOR (65.0 – 85.0)
+          </text>
+
+          <!-- Grid Lines -->
+          <line x1="50" y1="18" x2="700" y2="18" stroke="#EBDCC2" stroke-width="0.7" />
+          <text x="42" y="21" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="5.8" fill="#8F7263">100</text>
+          <line x1="50" y1="56" x2="700" y2="56" stroke="#EBDCC2" stroke-width="0.7" />
+          <text x="42" y="59" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="5.8" fill="#8F7263">70</text>
+          <line x1="50" y1="94" x2="700" y2="94" stroke="#EBDCC2" stroke-width="0.7" />
+          <text x="42" y="97" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="5.8" fill="#8F7263">40</text>
+          <line x1="50" y1="130" x2="700" y2="130" stroke="#3A2619" stroke-width="0.8" />
+          <text x="42" y="132" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="5.8" fill="#8F7263">0</text>
+
+          <!-- Raw Trace (Amber dashed) -->
+          <path d="M 50,62 L 72,55 L 94,69 L 116,49 L 138,45 L 160,30 L 182,36 L 204,43 L 226,33 L 248,30 L 270,52 L 292,49 L 314,47 L 336,51 L 358,46 L 380,48 L 402,65 L 424,75 L 446,82 L 468,73 L 490,59 L 512,51 L 534,45 L 556,49 L 578,44 L 600,42 L 622,45 L 644,43 L 666,47 L 688,45" 
+                fill="none" stroke="#B8772F" stroke-width="1.2" stroke-dasharray="3 2" />
+
+          <!-- EMA Trace (Bold Espresso) -->
+          <path d="M 50,62 C 80,59 130,42 160,35 C 190,29 230,31 260,39 C 290,49 350,48 380,50 C 410,62 440,77 470,69 C 500,55 560,47 600,44 C 640,43 670,45 688,45" 
+                fill="none" stroke="#1C1310" stroke-width="2.2" />
+
+          <!-- Markers -->
+          <circle cx="160" cy="35" r="3.2" fill="#B8772F" stroke="#1C1310" stroke-width="1.2" />
+          <text x="160" y="22" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.2" font-weight="700" fill="#B8772F">
+            INTERACTIVE PEAK (88.5)
+          </text>
+
+          <circle cx="380" cy="50" r="3.2" fill="#3F624D" stroke="#1C1310" stroke-width="1.2" />
+          <text x="380" y="40" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.2" font-weight="700" fill="#3F624D">
+            REFLECTIVE NOTE-TAKING (78.0)
+          </text>
+
+          <circle cx="470" cy="69" r="3.2" fill="#9E5B26" stroke="#1C1310" stroke-width="1.2" />
+          <text x="470" y="85" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.2" font-weight="700" fill="#9E5B26">
+            ATTENTION DROP (58.2)
+          </text>
+
+          <!-- Legend -->
+          <line x1="60" y1="140" x2="85" y2="140" stroke="#B8772F" stroke-width="1.2" stroke-dasharray="3 2" />
+          <text x="90" y="142" font-family="'JetBrains Mono', monospace" font-size="5.8" fill="#3A2619">Raw Instant Telemetry</text>
+          <line x1="220" y1="140" x2="245" y2="140" stroke="#1C1310" stroke-width="2.2" />
+          <text x="250" y="142" font-family="'JetBrains Mono', monospace" font-size="5.8" font-weight="700" fill="#1C1310">Smoothed EMA (α = 0.25)</text>
+        </svg>
+        <div class="diagram-caption">FIGURE 5.1: 30-SAMPLE MULTIMODAL TELEMETRY FUSION &amp; EXPONENTIAL MOVING AVERAGE (EMA) CURVE</div>
+      </div>
+
+      <!-- LLM Architecture & Offline Matrix Cards -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title-serif">§ 5.1 Rate-Protected Agentic AI Gateway</div>
+          <p>
+            Pedagogical recommendations are synthesized via cloud LLMs without exposing telemetry streams to rate exhaustion:
+          </p>
+          <ul style="padding-left: 12px; margin-top: 2px;">
+            <li><strong>Groq Llama 3.1 8B Instant:</strong> Ultra-low latency (~180ms), JSON output schema.</li>
+            <li><strong>Gemini 3.5 Flash / Flash-Lite:</strong> Deep multimodal reasoning with thinking budget capped.</li>
+            <li><strong>10-Second Calibrated Throttling Cache:</strong> External LLM calls fire <em>only</em> if the engagement trend shifts or after 10.0s elapsed cooldown.</li>
+            <li><strong>Output Cap:</strong> Strictly enforced at <code>max_tokens = 120</code>.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-title-serif">§ 5.2 Deterministic 6-State Offline Matrix</div>
+          <p>
+            If network connectivity fails or API rate quotas are exceeded (HTTP 429), the engine defaults instantly to the deterministic matrix:
+          </p>
+          <table class="editorial-table" style="margin-top: 2px;">
+            <tr><th>Trigger Condition</th><th>Pedagogical Action</th></tr>
+            <tr><td>Active Faces = 0</td><td>Awaiting Cohort Arrival</td></tr>
+            <tr><td>Visual Attention &lt; 50%</td><td>Address Gaze Drift &amp; Fatigue</td></tr>
+            <tr><td>Inactivity Penalty &ge; 5.0</td><td>Prompt Posture Shift / Break</td></tr>
+            <tr><td>Speech Active &amp; Audio &ge; 70%</td><td>Facilitate Peer Dialogue</td></tr>
+            <tr><td>Fused Score &ge; 75%</td><td>Deepen Theoretical Complexity</td></tr>
+            <tr><td>Baseline Steady State</td><td>Sustain Current Narrative Rhythm</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="running-footer">
+        <span>ATELIER ARCHITECTURAL PAPERS // MONOGRAPH 042-S</span>
+        <span>SECTION 05: COGNITIVE EQUILIBRIUM</span>
+        <span class="folio-pill">PAGE 06 OF 07</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 7: DATA ENGINEERING & API REFERENCE                                  -->
+  <!-- ========================================================================= -->
+  <div class="page" id="page-7">
+    <div class="grain-layer"></div>
+    <div class="content-wrap">
+      
+      <div class="running-header">
+        <span>ATELIER // PRESENCE · ARCHITECTURAL SPECIFICATION</span>
+        <span class="doc-id">SECTION 06: DATA ENGINEERING &amp; APIS</span>
+        <span>PAGE 07</span>
+      </div>
+
+      <div class="page-title-block">
+        <div class="page-num-label">DATA SCHEMAS &amp; PROTOCOL SPECIFICATIONS</div>
+        <h2 class="page-heading">06 / Data Engineering, Persistence &amp; API Reference</h2>
+        <div class="page-subheading">
+          SQLite relational schema, Write-Ahead Logging concurrency, WebSocket streaming contract, and RFC 4180 CSV export.
+        </div>
+      </div>
+
+      <!-- Relational Schema Code Block -->
+      <div class="card-dark" style="margin-bottom: 2mm; padding: 2mm 3mm;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1mm;">
+          <span class="card-title-mono" style="color: var(--crema);">SQLITE AIR-GAPPED RELATIONAL SCHEMA (WAL CONCURRENT)</span>
+          <span class="tag-badge" style="background: var(--roast); color: var(--latte); border-color: var(--mocha);">
+            PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;
+          </span>
+        </div>
+        <pre class="code-snippet">
+<span class="comment">-- 1. Verified & In-Progress Participant Presence Ledger</span>
+<span class="keyword">CREATE TABLE</span> attendance_logs (
+    id <span class="keyword">INTEGER PRIMARY KEY AUTOINCREMENT</span>, session_id <span class="keyword">VARCHAR</span>(<span class="number">64</span>) <span class="keyword">INDEX</span>, participant_id <span class="keyword">VARCHAR</span>(<span class="number">64</span>) <span class="keyword">INDEX</span>,
+    first_seen <span class="keyword">DATETIME</span>, last_seen <span class="keyword">DATETIME</span>, timestamp <span class="keyword">DATETIME INDEX</span>, sustained_seconds <span class="keyword">FLOAT DEFAULT</span> <span class="number">0.0</span>,
+    status <span class="keyword">VARCHAR</span>(<span class="number">32</span>) <span class="keyword">DEFAULT</span> <span class="string">'Tracking...'</span> <span class="comment">-- 'Verified Present', 'Verifying...', 'Transient'</span>
+);
+
+<span class="comment">-- 2. Granular Time-Series Telemetry & Sensory Feature Records</span>
+<span class="keyword">CREATE TABLE</span> engagement_sessions (
+    id <span class="keyword">INTEGER PRIMARY KEY AUTOINCREMENT</span>, session_id <span class="keyword">VARCHAR</span>(<span class="number">64</span>) <span class="keyword">INDEX</span>, timestamp <span class="keyword">DATETIME INDEX</span>,
+    active_faces <span class="keyword">INTEGER</span>, head_pose_score <span class="keyword">FLOAT</span>, movement_score <span class="keyword">FLOAT</span>, inactivity_penalty <span class="keyword">FLOAT</span>,
+    audio_rms_score <span class="keyword">FLOAT</span>, fused_score <span class="keyword">FLOAT</span>, trend <span class="keyword">VARCHAR</span>(<span class="number">64</span>)
+);
+
+<span class="comment">-- 3. Pedagogical Pacing & Decision Insights Journal</span>
+<span class="keyword">CREATE TABLE</span> ai_insights (
+    id <span class="keyword">INTEGER PRIMARY KEY AUTOINCREMENT</span>, session_id <span class="keyword">VARCHAR</span>(<span class="number">64</span>) <span class="keyword">INDEX</span>, timestamp <span class="keyword">DATETIME INDEX</span>,
+    engagement_context <span class="keyword">VARCHAR</span>(<span class="number">255</span>), suggestion_text <span class="keyword">VARCHAR</span>(<span class="number">1024</span>), pacing_action <span class="keyword">VARCHAR</span>(<span class="number">128</span>), provider <span class="keyword">VARCHAR</span>(<span class="number">64</span>)
+);</pre>
+      </div>
+
+      <!-- API Reference Table -->
+      <div class="card" style="margin-bottom: 2mm; padding: 2mm 3mm;">
+        <div class="card-title-mono">RESTFUL TELEMETRY INTERFACE &amp; PANDAS CSV STREAM</div>
+        <table class="editorial-table">
+          <tr>
+            <th style="width: 22%;">Endpoint</th>
+            <th style="width: 10%;">Method</th>
+            <th style="width: 38%;">Function &amp; Protocol Role</th>
+            <th style="width: 30%;">Response Type</th>
+          </tr>
+          <tr>
+            <td><code>/api/health</code></td>
+            <td><span class="tag-badge">GET</span></td>
+            <td>Sensory daemon health check, database status &amp; WAL state</td>
+            <td><code>application/json</code></td>
+          </tr>
+          <tr>
+            <td><code>/api/attendance</code></td>
+            <td><span class="tag-badge">GET</span></td>
+            <td>Chronological ledger of verified attendees sorted by timestamp</td>
+            <td><code>application/json</code> (list)</td>
+          </tr>
+          <tr>
+            <td><code>/api/analytics/trends</code></td>
+            <td><span class="tag-badge">GET</span></td>
+            <td>Aggregated session metrics (mean fused score, peak active faces)</td>
+            <td><code>application/json</code></td>
+          </tr>
+          <tr>
+            <td><code>/api/calibration</code></td>
+            <td><span class="tag-badge">GET/POST</span></td>
+            <td>Dynamic recalibration of sustained threshold (s), VAD floor (dB)</td>
+            <td><code>application/json</code></td>
+          </tr>
+          <tr>
+            <td><code>/api/export/csv</code></td>
+            <td><span class="tag-badge caramel">GET</span></td>
+            <td>RFC 4180 streaming CSV download via Pandas DataFrame engine</td>
+            <td><code>text/csv; charset=utf-8</code></td>
+          </tr>
+          <tr>
+            <td><code>/ws/stream</code></td>
+            <td><span class="tag-badge caramel">WS</span></td>
+            <td>Full-duplex real-time camera &amp; audio telemetry stream (6–10 FPS)</td>
+            <td>Bidirectional JSON</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- WebSocket Schemas -->
+      <div class="grid-2" style="margin-bottom: 2mm;">
+        <div class="card" style="padding: 2mm 3mm;">
+          <div class="card-title-mono">CLIENT WS PAYLOAD FORMAT</div>
+          <pre class="code-snippet" style="font-size: 5.8pt;">
+{
+  <span class="string">"frame"</span>: <span class="string">"data:image/jpeg;base64,/9j/4AAQ..."</span>,
+  <span class="string">"audio_samples"</span>: [-<span class="number">0.012</span>, <span class="number">0.045</span>, <span class="number">0.082</span>],
+  <span class="string">"mic_rms"</span>: <span class="number">0.045</span>,
+  <span class="string">"simulate"</span>: <span class="keyword">false</span>
+}</pre>
+        </div>
+
+        <div class="card" style="padding: 2mm 3mm;">
+          <div class="card-title-mono">SERVER WS RESPONSE FORMAT</div>
+          <pre class="code-snippet" style="font-size: 5.8pt;">
+{
+  <span class="string">"annotated_frame"</span>: <span class="string">"data:image/jpeg;base64..."</span>,
+  <span class="string">"participants"</span>: [{ <span class="string">"id"</span>: <span class="string">"Participant_01"</span>, <span class="string">"status"</span>: <span class="string">"Verified Present"</span>, <span class="string">"attention_score"</span>: <span class="number">94.2</span> }],
+  <span class="string">"metrics"</span>: { <span class="string">"fused_score"</span>: <span class="number">82.5</span>, <span class="string">"trend"</span>: <span class="string">"Steady Rhythm"</span>, <span class="string">"is_speech"</span>: <span class="keyword">true</span> },
+  <span class="string">"ai_suggestion"</span>: { <span class="string">"suggestion"</span>: <span class="string">"Deepen complexity..."</span>, <span class="string">"provider"</span>: <span class="string">"Gemini 3.5"</span> }
+}</pre>
+        </div>
+      </div>
+
+      <!-- Colophon & Sign-off -->
+      <div class="card-crema" style="border: 1px solid var(--latte); padding: 2.5mm 3.5mm; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-family: var(--font-serif); font-size: 10pt; font-weight: 600; color: var(--espresso);">
+            ATELIER // PRESENCE · ARCHITECTURAL TREATISE MONOGRAPH
+          </div>
+          <div style="font-family: var(--font-mono); font-size: 6.5pt; color: var(--mocha); margin-top: 1px;">
+            Published by Atelier Spatial Systems Guild · Release 2.4.0-Production · All On-Device Rights Reserved
+          </div>
+        </div>
+        <div style="text-align: right; font-family: var(--font-mono); font-size: 6.5pt; color: var(--espresso); line-height: 1.3;">
+          <div>DIGEST: <strong style="color: var(--caramel);">SHA256:7f8a9e21...c84b</strong></div>
+          <div>SIGN-OFF: <strong>PRINCIPAL ARCHITECT APPROVED</strong></div>
+        </div>
+      </div>
+
+      <div class="running-footer">
+        <span>ATELIER ARCHITECTURAL PAPERS // MONOGRAPH 042-S</span>
+        <span>SECTION 06: DATA ENGINEERING &amp; APIS</span>
+        <span class="folio-pill">PAGE 07 OF 07</span>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
