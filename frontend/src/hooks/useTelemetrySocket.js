@@ -256,7 +256,14 @@ export function useTelemetrySocket() {
     setIsStreaming(true);
     stopHardware();
 
-    connectWebSocket();
+    const ws = connectWebSocket();
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        simulate: true,
+        reset_tracks: true,
+        client_timestamp: Date.now(),
+      }));
+    }
 
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
@@ -357,11 +364,29 @@ export function useTelemetrySocket() {
     }
 
     setIsStreaming(true);
-    connectWebSocket();
+    const ws = connectWebSocket();
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        simulate: false,
+        reset_tracks: true,
+        client_timestamp: Date.now(),
+      }));
+    }
 
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(captureAndSend, 160);
   }, [connectWebSocket, captureAndSend, startSimulationStream, stopHardware]);
+
+  // Ensure mediaStream is bound to video element whenever it changes
+  useEffect(() => {
+    if (mediaStream && videoElemRef.current) {
+      const video = videoElemRef.current;
+      if (video.srcObject !== mediaStream) {
+        video.srcObject = mediaStream;
+        video.play().catch(() => {});
+      }
+    }
+  }, [mediaStream]);
 
   const toggleMicMute = useCallback(() => {
     setIsMicMuted((prev) => {

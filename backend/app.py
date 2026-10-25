@@ -311,21 +311,32 @@ async def websocket_stream(websocket: WebSocket):
     db: Session = SessionLocal()
     last_db_persist_time = time.time()
 
+    prev_is_simulate = None
     try:
         while True:
             data = await websocket.receive_json()
             is_simulate = data.get("simulate", False)
+            reset_requested = data.get("reset_tracks", False)
             raw_audio_rms = data.get("audio_rms", None)
             audio_samples = data.get("audio_samples", None)
             image_b64 = data.get("image", None) or data.get("frame", None)
             now = time.time()
 
+            # Clean state reset on mode transition or explicit client request
+            if reset_requested or (prev_is_simulate is not None and prev_is_simulate != is_simulate):
+                face_detector.reset_tracks()
+                fusion_engine.reset()
+            prev_is_simulate = is_simulate
+
             # Handle Frame Input
-            if is_simulate or not image_b64:
-                # Generate synthetic studio classroom canvas
+            if is_simulate:
+                # Explicit simulation requested: generate synthetic studio classroom canvas
                 frame_bgr, sim_rms, sim_spectral_bins = camera_service.generate_simulated_frame(now)
+            elif not image_b64:
+                # Standby empty frame (do NOT inject cartoon simulation into real camera feed!)
+                frame_bgr = np.zeros((480, 640, 3), dtype=np.uint8)
             else:
-                # Decode client-provided base64 jpeg
+                # Decode client-provided real hardware camera frame
                 try:
                     if "," in image_b64:
                         image_b64 = image_b64.split(",", 1)[1]
@@ -333,9 +344,9 @@ async def websocket_stream(websocket: WebSocket):
                     nparr = np.frombuffer(img_bytes, np.uint8)
                     frame_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                     if frame_bgr is None:
-                        frame_bgr, sim_rms, _ = camera_service.generate_simulated_frame(now)
+                        frame_bgr = np.zeros((480, 640, 3), dtype=np.uint8)
                 except Exception:
-                    frame_bgr, sim_rms, _ = camera_service.generate_simulated_frame(now)
+                    frame_bgr = np.zeros((480, 640, 3), dtype=np.uint8)
 
             # Process Audio Signal via Real Librosa / PCM Feature Extraction
             if audio_samples is not None and len(audio_samples) > 0:

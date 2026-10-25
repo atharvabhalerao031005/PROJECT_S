@@ -228,6 +228,11 @@ class FaceDetector:
         except Exception:
             pass
 
+    def reset_tracks(self) -> None:
+        """Clears all active tracks and resets participant counter."""
+        self.tracks.clear()
+        self.next_track_id = 1
+
     def process_frame(
         self, frame_bgr: np.ndarray, timestamp: float
     ) -> Tuple[np.ndarray, List[Dict[str, Any]], float]:

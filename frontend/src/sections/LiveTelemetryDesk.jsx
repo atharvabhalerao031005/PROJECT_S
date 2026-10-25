@@ -84,6 +84,16 @@ export default function LiveTelemetryDesk({ telemetry }) {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
+  // Ensure videoRef receives mediaStream as soon as either is available
+  useEffect(() => {
+    if (videoRef && videoRef.current && mediaStream) {
+      if (videoRef.current.srcObject !== mediaStream) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.play().catch(() => {});
+      }
+    }
+  }, [mediaStream, videoRef]);
+
   return (
     <section
       id="live-desk"
@@ -331,40 +341,112 @@ export default function LiveTelemetryDesk({ telemetry }) {
 
                 {/* Main Viewfinder Canvas with 1.5px Caramel/Mocha Corner Brackets */}
                 <div className="relative aspect-[4/3] bg-roast/70 border border-mocha/50 overflow-hidden flex items-center justify-center shadow-2xl">
-                  {/* Real-time frame display with direct hardware video fallback */}
-                  {isStreaming && !isSimulating ? (
-                    <div className="relative w-full h-full">
-                      <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        muted
-                        className="w-full h-full object-cover transform -scale-x-100"
-                      />
-                      {annotatedFrame && (
-                        <img
-                          src={annotatedFrame}
-                          alt="OpenCV Haar Telemetry Overlay"
-                          className="absolute inset-0 w-full h-full object-cover opacity-90 pointer-events-none"
-                        />
+                  {/* Real hardware webcam element: ALWAYS mounted in DOM to prevent ref detachment */}
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className={`w-full h-full object-cover transform -scale-x-100 ${
+                      isStreaming && !isSimulating ? 'block' : 'hidden'
+                    }`}
+                  />
+
+                  {/* Mode A: Live Hardware Camera with Transparent Dynamic Vector Reticle Overlay (Zero Opaque PNG!) */}
+                  {isStreaming && !isSimulating && (
+                    <svg
+                      className="absolute inset-0 w-full h-full pointer-events-none z-10"
+                      viewBox="0 0 640 480"
+                      preserveAspectRatio="none"
+                    >
+                      {participants.map((p, idx) => {
+                        const bbox = p.bbox || [160, 90, 320, 320];
+                        const [x, y, w, h] = bbox;
+                        // Mirrored X to match video transform -scale-x-100
+                        const mirroredX = Math.max(0, Math.min(640 - w, 640 - (x + w)));
+                        const isVerified = p.is_verified || (p.sustained_seconds >= 10.0);
+                        const isVerifying = !isVerified && p.sustained_seconds >= 3.0;
+                        const bracketColor = isVerified ? '#B8772F' : isVerifying ? '#D2AE82' : '#8C6747';
+                        const bracketLen = Math.max(14, Math.floor(Math.min(w, h) * 0.22));
+                        const statusLabel = isVerified ? 'VERIFIED PRESENT' : isVerifying ? 'VERIFYING...' : 'TRANSIENT (<3s)';
+                        const tagText = `${p.track_id || 'Participant_01'} • ${statusLabel} • ${(p.sustained_seconds || 0).toFixed(1)}s`;
+                        const tagWidth = Math.max(170, tagText.length * 6.8);
+                        const tagY = Math.max(22, y - 10);
+
+                        return (
+                          <g key={p.track_id || idx} className="transition-all duration-75">
+                            {/* 4 Corner Drafting Brackets */}
+                            <path d={`M ${mirroredX} ${y + bracketLen} L ${mirroredX} ${y} L ${mirroredX + bracketLen} ${y}`} fill="none" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" />
+                            <path d={`M ${mirroredX + w - bracketLen} ${y} L ${mirroredX + w} ${y} L ${mirroredX + w} ${y + bracketLen}`} fill="none" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" />
+                            <path d={`M ${mirroredX} ${y + h - bracketLen} L ${mirroredX} ${y + h} L ${mirroredX + bracketLen} ${y + h}`} fill="none" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" />
+                            <path d={`M ${mirroredX + w - bracketLen} ${y + h} L ${mirroredX + w} ${y + h} L ${mirroredX + w} ${y + h - bracketLen}`} fill="none" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" />
+
+                            {/* Bounding box hairline outline */}
+                            <rect x={mirroredX} y={y} width={w} height={h} fill="none" stroke={bracketColor} strokeWidth="0.75" strokeDasharray="4 3" opacity="0.65" />
+
+                            {/* Center Reticle Crosshair */}
+                            <circle cx={mirroredX + w / 2} cy={y + h / 2} r="3" fill={bracketColor} />
+                            <circle cx={mirroredX + w / 2} cy={y + h / 2} r="8" fill="none" stroke={bracketColor} strokeWidth="1" strokeDasharray="2 2" opacity="0.8" />
+
+                            {/* Typographic Identity Capsule Tag */}
+                            <rect x={mirroredX} y={tagY - 14} width={tagWidth} height="18" fill="#1C1310" stroke={bracketColor} strokeWidth="1" rx="2" opacity="0.94" />
+                            <text x={mirroredX + 6} y={tagY - 2} fill="#F7F0E3" fontSize="9" fontFamily="monospace" fontWeight="600" letterSpacing="0.06em">
+                              {tagText}
+                            </text>
+
+                            {/* Sustained Presence Progress Line */}
+                            <line x1={mirroredX} y1={y + h + 6} x2={mirroredX + w} y2={y + h + 6} stroke="#3A2619" strokeWidth="2" strokeLinecap="round" />
+                            <line
+                              x1={mirroredX}
+                              y1={y + h + 6}
+                              x2={mirroredX + Math.min(w, w * ((p.sustained_seconds || 0) / 10.0))}
+                              y2={y + h + 6}
+                              stroke={bracketColor}
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                            />
+                          </g>
+                        );
+                      })}
+
+                      {/* Optical Alignment Reticle when no face currently in frame */}
+                      {participants.length === 0 && (
+                        <g opacity="0.4">
+                          <circle cx="320" cy="240" r="36" fill="none" stroke="#B8772F" strokeWidth="1" strokeDasharray="4 4" />
+                          <line x1="295" y1="240" x2="345" y2="240" stroke="#B8772F" strokeWidth="1" />
+                          <line x1="320" y1="215" x2="320" y2="265" stroke="#B8772F" strokeWidth="1" />
+                          <rect x="180" y="285" width="280" height="20" fill="#1C1310" stroke="#6B4630" strokeWidth="0.75" rx="2" opacity="0.9" />
+                          <text x="320" y="299" textAnchor="middle" fill="#D2AE82" fontSize="9" fontFamily="monospace" letterSpacing="0.1em">
+                            AWAITING ATTENDEE • ALIGN FACE IN CENTER CONE
+                          </text>
+                        </g>
                       )}
-                    </div>
-                  ) : annotatedFrame ? (
+                    </svg>
+                  )}
+
+                  {/* Mode B: Synthetic Studio Simulation Stream */}
+                  {isStreaming && isSimulating && annotatedFrame && (
                     <img
                       src={annotatedFrame}
-                      alt="Live OpenCV Haar Telemetry Stream"
+                      alt="Synthetic Studio Classroom Simulation"
                       className="w-full h-full object-cover"
                     />
-                  ) : isStreaming ? (
+                  )}
+
+                  {/* Mode C: Opening / Calibrating State */}
+                  {isStreaming && isSimulating && !annotatedFrame && (
                     <div className="text-center p-8 space-y-4">
                       <div className="w-16 h-16 rounded-full border border-caramel/70 mx-auto flex items-center justify-center animate-pulse">
                         <GazeEyeGlyph className="w-8 h-8" stroke="#B8772F" />
                       </div>
                       <p className="font-display italic text-lg text-crema/85 max-w-sm">
-                        Opening optical aperture and calibrating sensor cone...
+                        Opening optical aperture and calibrating simulation matrix...
                       </p>
                     </div>
-                  ) : (
+                  )}
+
+                  {/* Mode D: Standby State */}
+                  {!isStreaming && (
                     <div className="text-center p-8 space-y-4">
                       <div className="w-16 h-16 rounded-full border border-mocha/70 mx-auto flex items-center justify-center">
                         <GazeEyeGlyph className="w-8 h-8" stroke="#B8772F" />
@@ -513,76 +595,149 @@ export default function LiveTelemetryDesk({ telemetry }) {
                   />
                 </div>
 
-                {/* Baseline-Aligned Dotted Leaders Readout */}
+                {/* Baseline-Aligned Dotted Leaders Readout with Human Explanations */}
                 <div className="space-y-4 font-sans text-sm">
-                  <div className="flex items-baseline justify-between group">
-                    <span className="text-crema">Active Participants in Frame</span>
-                    <span className="dotted-leader" />
-                    <span className="font-mono text-sm text-caramel font-semibold">
-                      {isStreaming ? metrics.active_count.toString().padStart(2, '0') : '00 (Standby)'}
+                  {/* Channel mode banner */}
+                  <div className="pb-2 border-b border-roast/60 flex items-center justify-between">
+                    <span className="font-mono text-[10px] tracking-wider text-latte uppercase">Telemetry Channel</span>
+                    <span className={`font-mono text-[10px] tracking-wider uppercase font-semibold px-2 py-0.5 border ${
+                      isStreaming
+                        ? isSimulating
+                          ? 'border-latte/60 text-latte bg-roast/50'
+                          : 'border-caramel text-caramel bg-caramel/15'
+                        : 'border-mocha/50 text-latte/60'
+                    }`}>
+                      {isStreaming
+                        ? isSimulating
+                          ? 'SYNTHETIC COHORT // ROOM 402'
+                          : 'LIVE WEBCAM // LOCAL ATTENDEE'
+                        : 'STANDBY // DISCONNECTED'}
                     </span>
                   </div>
 
-                  <div className="flex items-baseline justify-between group">
-                    <span className="text-crema">Sustained Presence Duration</span>
-                    <span className="dotted-leader" />
-                    <span className="font-mono text-sm text-foam">
-                      {isStreaming && participants.length > 0 ? formatSeconds(participants[0]?.sustained_seconds) : '— (Awaiting Stream)'}
-                    </span>
+                  {/* 1. Active Attendees */}
+                  <div>
+                    <div className="flex items-baseline justify-between group">
+                      <span className="text-crema font-medium">Active Attendees in Frame</span>
+                      <span className="dotted-leader" />
+                      <span className="font-mono text-sm text-caramel font-semibold">
+                        {isStreaming
+                          ? isSimulating
+                            ? `${metrics.active_count.toString().padStart(2, '0')} Students`
+                            : `${metrics.active_count.toString().padStart(2, '0')} ${metrics.active_count === 1 ? '(You)' : 'Attendees'}`
+                          : '00 (Standby)'}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-latte/60 font-sans mt-0.5">
+                      Euclidean centroid face tracking (persistent Participant IDs)
+                    </div>
                   </div>
 
-                  <div className="flex items-baseline justify-between group">
-                    <span className="text-crema">Visual Attention Index</span>
-                    <span className="dotted-leader" />
-                    <span className="font-mono text-sm text-latte font-medium">
-                      {isStreaming && metrics.visual_attention > 0 ? `${metrics.visual_attention.toFixed(1)}%` : '— (Standby)'}
-                    </span>
+                  {/* 2. Sustained Presence */}
+                  <div>
+                    <div className="flex items-baseline justify-between group">
+                      <span className="text-crema font-medium">Sustained Presence Duration</span>
+                      <span className="dotted-leader" />
+                      <span className="font-mono text-sm text-foam font-semibold">
+                        {isStreaming && participants.length > 0
+                          ? `${formatSeconds(participants[0]?.sustained_seconds)} ${
+                              participants[0]?.sustained_seconds >= 10.0 ? '• [VERIFIED]' : '• [VERIFYING]'
+                            }`
+                          : '— (Awaiting Stream)'}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-latte/60 font-sans mt-0.5">
+                      Unbroken presence (≥10s commits automatically to SQLite Ledger)
+                    </div>
                   </div>
 
-                  <div className="flex items-baseline justify-between group">
-                    <span className="text-crema">Acoustic Interaction (RMS)</span>
-                    <span className="dotted-leader" />
-                    <span className="font-mono text-sm text-foam flex items-center space-x-1.5">
-                      <span className={`w-1.5 h-1.5 rounded-full ${isStreaming && metrics.is_speech_active ? 'bg-caramel animate-incandescent' : 'bg-mocha/70'}`} />
-                      <span>{isStreaming && metrics.audio_db !== null ? `${metrics.audio_db.toFixed(1)} dBFS` : '— (Standby)'}</span>
-                      {isStreaming && hasMic && !isSimulating && isMicMuted && (
-                        <span className="text-[10px] text-caramel/80 uppercase font-mono">[MUTED]</span>
-                      )}
-                    </span>
+                  {/* 3. Visual Attention */}
+                  <div>
+                    <div className="flex items-baseline justify-between group">
+                      <span className="text-crema font-medium">Visual Attention Index</span>
+                      <span className="dotted-leader" />
+                      <span className="font-mono text-sm text-latte font-semibold">
+                        {isStreaming && metrics.visual_attention > 0 ? `${metrics.visual_attention.toFixed(1)}%` : '— (Standby)'}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-latte/60 font-sans mt-0.5">
+                      Gaze alignment facing camera (100% frontal; note-taking downward protected)
+                    </div>
                   </div>
 
-                  <div className="flex items-baseline justify-between group">
-                    <span className="text-crema">Movement Dynamics</span>
-                    <span className="dotted-leader" />
-                    <span className="font-mono text-sm text-foam">
-                      {isStreaming && metrics.movement_dynamics > 0 ? `${metrics.movement_dynamics.toFixed(1)} / 100` : '— (Standby)'}
-                    </span>
+                  {/* 4. Acoustic Level */}
+                  <div>
+                    <div className="flex items-baseline justify-between group">
+                      <span className="text-crema font-medium">Acoustic Interaction (RMS)</span>
+                      <span className="dotted-leader" />
+                      <span className="font-mono text-sm text-foam flex items-center space-x-1.5 font-semibold">
+                        <span className={`w-1.5 h-1.5 rounded-full ${isStreaming && metrics.is_speech_active ? 'bg-caramel animate-incandescent' : 'bg-mocha/70'}`} />
+                        <span>{isStreaming && metrics.audio_db !== null ? `${metrics.audio_db.toFixed(1)} dBFS` : '— (Standby)'}</span>
+                        {isStreaming && hasMic && !isSimulating && isMicMuted && (
+                          <span className="text-[10px] text-caramel/80 uppercase font-mono">[MUTED]</span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-latte/60 font-sans mt-0.5">
+                      Human speech formant filter (300Hz–3400Hz frequency verification)
+                    </div>
                   </div>
 
-                  <div className="flex items-baseline justify-between group">
-                    <span className="text-crema">Inactivity Penalty</span>
-                    <span className="dotted-leader" />
-                    <span className="font-mono text-sm text-latte/80 font-medium">
-                      {isStreaming ? `-${metrics.inactivity_penalty.toFixed(1)}` : '0.0 (Standby)'}
-                    </span>
+                  {/* 5. Movement */}
+                  <div>
+                    <div className="flex items-baseline justify-between group">
+                      <span className="text-crema font-medium">Movement Dynamics</span>
+                      <span className="dotted-leader" />
+                      <span className="font-mono text-sm text-foam">
+                        {isStreaming && metrics.movement_dynamics > 0 ? `${metrics.movement_dynamics.toFixed(1)} / 100` : '— (Standby)'}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-latte/60 font-sans mt-0.5">
+                      Frame-differencing optical energy (natural breathing & micro-posture)
+                    </div>
                   </div>
 
-                  <div className="pt-3 border-t border-roast/80 flex items-baseline justify-between group">
-                    <span className="text-foam font-display text-base">Multimodal Fusion Score</span>
-                    <span className="dotted-leader" />
-                    <span className="font-mono text-lg text-caramel font-bold">
-                      {isStreaming && metrics.fused_score > 0 ? (
-                        <>
-                          {metrics.fused_score.toFixed(1)}{' '}
-                          <span className="text-xs text-latte/70 font-normal">/ 100</span>
-                        </>
-                      ) : (
-                        <span className="text-xs text-latte/70 font-normal tracking-wider">STANDBY</span>
-                      )}
-                    </span>
+                  {/* 6. Inactivity Penalty */}
+                  <div>
+                    <div className="flex items-baseline justify-between group">
+                      <span className="text-crema font-medium">Inactivity Penalty</span>
+                      <span className="dotted-leader" />
+                      <span className="font-mono text-sm text-latte/80 font-medium">
+                        {isStreaming
+                          ? metrics.inactivity_penalty > 0
+                            ? `-${metrics.inactivity_penalty.toFixed(1)} pts`
+                            : '0.0 (Flow State Active)'
+                          : '0.0 (Standby)'}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-latte/60 font-sans mt-0.5">
+                      Forgiven during frontal gaze concentration (stillness = deep focus)
+                    </div>
                   </div>
 
-                  <div className="flex items-baseline justify-between text-xs font-mono group">
+                  {/* 7. Fused Multimodal Score */}
+                  <div className="pt-3 border-t border-roast/80">
+                    <div className="flex items-baseline justify-between group">
+                      <span className="text-foam font-display text-base">Multimodal Fusion Score</span>
+                      <span className="dotted-leader" />
+                      <span className="font-mono text-lg text-caramel font-bold">
+                        {isStreaming && metrics.fused_score > 0 ? (
+                          <>
+                            {metrics.fused_score.toFixed(1)}{' '}
+                            <span className="text-xs text-latte/70 font-normal">/ 100</span>
+                          </>
+                        ) : (
+                          <span className="text-xs text-latte/70 font-normal tracking-wider">STANDBY</span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-latte/70 font-sans mt-0.5">
+                      Weighted synthesis: 45% Vision + 35% Motion + 20% Voice (EMA α=0.25)
+                    </div>
+                  </div>
+
+                  {/* 8. Session Trajectory */}
+                  <div className="flex items-baseline justify-between text-xs font-mono group pt-1">
                     <span className="text-latte/70 uppercase">Session Trajectory</span>
                     <span className="dotted-leader" />
                     <span className="text-caramel uppercase tracking-wider font-semibold">

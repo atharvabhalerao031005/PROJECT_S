@@ -227,6 +227,15 @@ class MultimodalFusionEngine:
         self.last_compute_time: Optional[float] = None
         self.head_pose_estimator = HeadPoseEstimator()
 
+    def reset(self) -> None:
+        """Resets optical motion state, EMA, and inactivity timers."""
+        self.fused_history.clear()
+        self.ema_score = None
+        self.prev_gray_frame = None
+        self.prev_rois.clear()
+        self.inactivity_seconds = 0.0
+        self.last_compute_time = None
+
     def compute_movement_dynamics(
         self,
         frame_bgr: np.ndarray,
@@ -283,26 +292,30 @@ class MultimodalFusionEngine:
             motion_energy = frame_energy
 
         # 2. Track Inactivity:
-        # If optical motion remains below threshold (< 0.03) for > 8.0 seconds continuously,
-        # apply an Inactivity Penalty (reducing engagement by up to 25 points).
-        if motion_energy < 0.03:
+        # Subtle posture stillness is natural when focused on a lecture.
+        # Only accumulate inactivity if motion is virtually zero (< 0.015).
+        if motion_energy < 0.015:
             self.inactivity_seconds += dt
         else:
-            self.inactivity_seconds = max(0.0, self.inactivity_seconds - 2.0 * dt)
+            self.inactivity_seconds = max(0.0, self.inactivity_seconds - 2.5 * dt)
 
+        # Inactivity penalty starts after 8.0 seconds of stillness, capped reasonably
         if self.inactivity_seconds > 8.0:
-            inactivity_penalty = min(25.0, (self.inactivity_seconds - 8.0) * 3.5)
+            inactivity_penalty = min(20.0, (self.inactivity_seconds - 8.0) * 2.5)
         else:
             inactivity_penalty = 0.0
 
         # 3. Calculate movement score (0-100 scale):
-        # Subtle motion (0.03 - 0.25) is ideal active presence (nodding, writing, shifting gaze)
-        if 0.03 <= motion_energy <= 0.25:
-            movement_score = 75.0 + 20.0 * math.sin(math.pi * (motion_energy - 0.03) / 0.22)
-        elif motion_energy < 0.03:
-            movement_score = 50.0 + (motion_energy / 0.03) * 25.0
+        # Human micro-motion (breathing, eye saccades, writing) typically yields motion_energy 0.005 - 0.20
+        if 0.008 <= motion_energy <= 0.25:
+            # Ideal focused presence posture
+            movement_score = 78.0 + 15.0 * math.sin(math.pi * min(1.0, (motion_energy - 0.008) / 0.18))
+        elif motion_energy < 0.008:
+            # Still posture: steady baseline around 72-76 (focused study, not penalized)
+            movement_score = 72.0 + (motion_energy / 0.008) * 6.0
         else:
-            movement_score = max(30.0, 95.0 - (motion_energy - 0.25) * 120.0)
+            # High kinetic movement
+            movement_score = max(45.0, 92.0 - (motion_energy - 0.25) * 80.0)
 
         return {
             "movement_score": float(round(movement_score, 1)),
@@ -325,11 +338,14 @@ class MultimodalFusionEngine:
         Smooth with EMA (alpha = 0.25):
             EMA_t = 0.25 * fused_t + 0.75 * EMA_{t-1}
         """
+        # If visual attention is high (facing screen >= 65%), forgive stillness (Flow State)
+        effective_penalty = inactivity_penalty if visual_attention_score < 65.0 else 0.0
+
         raw_fused = (
             0.45 * visual_attention_score
             + 0.35 * movement_score
             + 0.20 * acoustic_score
-            - inactivity_penalty
+            - effective_penalty
         )
         raw_fused = float(np.clip(raw_fused, 0.0, 100.0))
 
@@ -385,17 +401,17 @@ class MultimodalFusionEngine:
             x = np.arange(n)
             slope = float(np.polyfit(x, recent, 1)[0])
 
-        # Priority 1: Attention Drop Detected (slope < -0.3 or score < 60)
-        if slope < -0.3 or current_score < 60.0:
+        # Priority 1: Attention Drop Detected (score < 60.0 or persistent steep decline)
+        if current_score < 60.0 or slope < -0.4:
             return "Attention Drop Detected"
 
         # Priority 2: Interactive Peak (score > 85, active acoustics/movement)
         if current_score > 85.0 and (acoustic_score > 60.0 or movement_score > 65.0):
             return "Interactive Peak"
 
-        # Priority 3: Reflective Silence (high gaze, low acoustics, low motion)
+        # Priority 3: Reflective Silence (high gaze focus, quiet seminar environment)
         if visual_attention >= 75.0 and acoustic_score < 40.0 and movement_score < 65.0:
             return "Reflective Silence"
 
-        # Priority 4: Steady Classroom Rhythm (stable score 65-85)
+        # Priority 4: Steady Classroom Rhythm (stable focused score 60-85)
         return "Steady Classroom Rhythm"
