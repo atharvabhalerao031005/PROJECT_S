@@ -195,7 +195,7 @@ export default function Navbar({ navTheme: propTheme, activeSection: propActiveS
             : 'bg-[#1C1310]/92 border-[#3A2619]/60 text-foam backdrop-blur-md'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 h-16 flex items-center justify-between">
           {/* Left: Serif Wordmark with dynamic contrast */}
           <a
             href="#hero"
@@ -207,21 +207,21 @@ export default function Navbar({ navTheme: propTheme, activeSection: propActiveS
               isLight ? 'text-espresso' : 'text-foam'
             }`}
           >
-            <span className="font-display text-lg tracking-tight font-medium group-hover:text-caramel transition-colors duration-200">
+            <span className="font-display text-base sm:text-lg tracking-tight font-medium group-hover:text-caramel transition-colors duration-200">
               ATELIER // PRESENCE
             </span>
             <span className="w-2 h-2 rounded-full bg-caramel inline-block animate-incandescent" />
           </a>
 
           {/* Right: Editorial Links + Controls with Dynamic Contrast */}
-          <nav className="hidden md:flex items-center space-x-5 lg:space-x-6">
+          <nav className="hidden lg:flex items-center gap-2 lg:gap-3 xl:gap-5">
             {navItems.map((item) => {
               const isActive = currentActiveSection === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => scrollToSection(item.id)}
-                  className={`font-mono text-xs tracking-micro transition-colors cursor-pointer bg-transparent border-0 py-1 ${
+                  className={`font-mono text-xs tracking-micro transition-colors cursor-pointer bg-transparent border-0 px-1.5 py-1 ${
                     isActive
                       ? 'text-caramel font-semibold border-b border-caramel'
                       : isLight
@@ -238,7 +238,7 @@ export default function Navbar({ navTheme: propTheme, activeSection: propActiveS
             <button
               onClick={onOpenGuide}
               title="Open Atelier Interactive Concierge & Walkthrough Guide"
-              className={`font-mono text-xs uppercase tracking-wider px-2.5 py-1 border transition-all cursor-pointer flex items-center space-x-1.5 ${
+              className={`font-mono text-xs uppercase tracking-wider px-2 py-1 border transition-all cursor-pointer flex items-center space-x-1.5 ${
                 isLight
                   ? 'border-caramel/50 text-caramel hover:bg-caramel/10'
                   : 'border-caramel/60 text-caramel hover:bg-caramel/15'
@@ -290,8 +290,8 @@ export default function Navbar({ navTheme: propTheme, activeSection: propActiveS
             </button>
           </nav>
 
-          {/* Mobile View Controls */}
-          <div className="md:hidden flex items-center space-x-2">
+          {/* Mobile View Controls (< 1024px) */}
+          <div className="lg:hidden flex items-center space-x-2">
             <button
               onClick={onOpenGuide}
               className={`font-mono text-[10px] uppercase tracking-wider px-2 py-1 border transition-colors ${
@@ -322,10 +322,10 @@ export default function Navbar({ navTheme: propTheme, activeSection: propActiveS
           </div>
         </div>
 
-        {/* Mobile Dropdown Drawer */}
+        {/* Mobile Dropdown Drawer (< 1024px) */}
         {isMobileMenuOpen && (
           <div
-            className={`md:hidden border-t px-6 py-4 space-y-3 animate-in slide-in-from-top-2 duration-150 backdrop-blur-md ${
+            className={`lg:hidden border-t px-6 py-4 space-y-3 animate-in slide-in-from-top-2 duration-150 backdrop-blur-md ${
               isLight
                 ? 'bg-[#F7F0E3]/98 border-[#6B4630]/20 text-espresso divide-y divide-mocha/20'
                 : 'bg-[#1C1310]/98 border-[#3A2619]/80 text-foam divide-y divide-roast/60'

@@ -69,7 +69,7 @@ def on_startup():
 
 
 @app.get("/api/health")
-def health_check():
+async def health_check():
     """System & model readiness check."""
     return {
         "status": "operational",
@@ -182,7 +182,7 @@ def get_analytics(db: Session = Depends(get_db)):
 
 
 @app.get("/api/calibration")
-def get_calibration():
+async def get_calibration():
     """Returns the live calibrated parameters of the sensory rig."""
     return {
         "status": "calibrated",

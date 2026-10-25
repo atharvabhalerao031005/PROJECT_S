@@ -68,12 +68,12 @@ export default function HeroSection({ onStartSession, onOpenGuide }) {
     <section
       id="hero"
       ref={containerRef}
-      className="relative min-h-screen flex flex-col justify-between pt-24 pb-12 px-6 lg:px-12 bg-espresso overflow-hidden select-none"
+      className="relative min-h-screen min-h-[100dvh] flex flex-col justify-between pt-20 sm:pt-24 pb-8 sm:pb-12 px-4 sm:px-6 lg:px-12 bg-espresso overflow-hidden select-none"
     >
       {/* Top Editorial Index Meta */}
-      <div className="max-w-7xl mx-auto w-full flex items-center justify-between border-b border-roast/60 pb-4 pt-4">
+      <div className="max-w-7xl mx-auto w-full flex items-center justify-between border-b border-roast/60 pb-3 sm:pb-4 pt-2 sm:pt-4">
         <div className="flex items-center space-x-3">
-          <span className="micro-label text-latte/75 font-medium">
+          <span className="micro-label text-latte/75 font-medium text-[10px] sm:text-[11px]">
             FOLIO N° 04 // 2026 EDITION
           </span>
           <span className="hidden sm:inline text-latte/50 text-xs font-mono">•</span>
@@ -83,21 +83,21 @@ export default function HeroSection({ onStartSession, onOpenGuide }) {
           </span>
         </div>
 
-        <span className="micro-label text-latte/85 hidden lg:inline tracking-micro font-medium">
+        <span className="micro-label text-latte/85 hidden lg:inline tracking-micro font-medium text-[10px] xl:text-[11px]">
           LOCAL WEIGHTS • SUSTAINED COGNITION • ZERO BIOMETRIC STORAGE
         </span>
 
-        <span className="micro-label text-latte/75 font-medium">
+        <span className="micro-label text-latte/75 font-medium text-[10px] sm:text-[11px]">
           SYS.VER 2.0.4 [STANDALONE]
         </span>
       </div>
 
       {/* Main Hero Container */}
-      <div className="max-w-7xl mx-auto w-full my-auto py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+      <div className="max-w-7xl mx-auto w-full my-auto py-4 sm:py-6 lg:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-12 items-center">
           
           {/* Typography Column */}
-          <div className="lg:col-span-7 z-10 space-y-6">
+          <div className="lg:col-span-7 z-10 space-y-4 sm:space-y-6 min-w-0">
             {/* Tactile Live Indicator Badge */}
             <div className="inline-flex items-center space-x-2 px-3 py-1 border border-mocha/40 bg-roast/35 backdrop-blur-sm">
               <span className="w-2 h-2 rounded-full bg-caramel animate-incandescent" />
@@ -106,7 +106,7 @@ export default function HeroSection({ onStartSession, onOpenGuide }) {
               </span>
             </div>
 
-            <h1 className="fluid-headline font-display text-foam font-normal tracking-tight">
+            <h1 className="fluid-headline font-display text-foam font-normal tracking-tight min-w-zero">
               <span className="line-mask">
                 <span ref={titleLine1Ref} className="line-inner block">
                   Slow mornings,
@@ -121,7 +121,7 @@ export default function HeroSection({ onStartSession, onOpenGuide }) {
 
             <p
               ref={subtitleRef}
-              className="text-lg md:text-xl text-crema/85 font-sans max-w-xl font-normal leading-relaxed"
+              className="text-base sm:text-lg md:text-xl text-crema/85 font-sans max-w-xl font-normal leading-relaxed"
             >
               Multimodal attendance and cognitive engagement telemetry crafted like an analog 
               architectural study journal. Combining OpenCV Haar Cascades, sustained temporal presence, 
@@ -129,11 +129,11 @@ export default function HeroSection({ onStartSession, onOpenGuide }) {
             </p>
 
             {/* CTAs */}
-            <div ref={ctaGroupRef} className="flex flex-wrap items-center gap-4 sm:gap-6 pt-2">
+            <div ref={ctaGroupRef} className="flex flex-wrap items-center gap-3 sm:gap-6 pt-2">
               <button
                 ref={magneticButtonRef}
                 onClick={scrollToLive}
-                className="relative group overflow-hidden px-7 py-3.5 sm:px-8 sm:py-4 border border-caramel bg-transparent text-foam font-mono text-xs uppercase tracking-widest transition-colors duration-300 cursor-pointer shadow-lg font-medium"
+                className="relative group overflow-hidden px-6 py-3 sm:px-8 sm:py-4 border border-caramel bg-transparent text-foam font-mono text-xs uppercase tracking-widest transition-colors duration-300 cursor-pointer shadow-lg font-medium"
               >
                 {/* Bottom-up caramel fill wipe */}
                 <span className="absolute inset-0 bg-caramel translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-0" />
@@ -146,7 +146,7 @@ export default function HeroSection({ onStartSession, onOpenGuide }) {
               <button
                 type="button"
                 onClick={onOpenGuide}
-                className="relative group px-5 py-3.5 sm:py-4 border border-mocha/60 bg-roast/40 hover:bg-roast hover:border-caramel text-foam font-mono text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center space-x-2 shadow-sm"
+                className="relative group px-4 py-3 sm:px-5 sm:py-4 border border-mocha/60 bg-roast/40 hover:bg-roast hover:border-caramel text-foam font-mono text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center space-x-2 shadow-sm"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-caramel animate-incandescent" />
                 <span className="text-caramel font-semibold">Concierge Guide [ ? ]</span>
@@ -163,24 +163,38 @@ export default function HeroSection({ onStartSession, onOpenGuide }) {
             {/* Subtle Marginalia Note tilted at -1.5deg */}
             <div
               ref={marginaliaRef}
-              className="marginalia-note p-4 border border-mocha/35 bg-roast/30 max-w-lg mt-6 relative shadow-md"
+              className="marginalia-note p-3 sm:p-4 border border-mocha/35 bg-roast/30 max-w-lg mt-4 sm:mt-6 relative shadow-md"
               style={{ transform: 'rotate(-1.5deg)' }}
             >
+              {/* Architectural datum connector hairline extending rightward toward drafting scene */}
+              <div
+                className="hidden xl:block absolute top-1/2 -right-24 w-24 h-[1px] pointer-events-none opacity-40"
+                style={{
+                  background: 'linear-gradient(90deg, rgba(184, 119, 47, 0.5) 0%, rgba(184, 119, 47, 0) 100%)',
+                }}
+              />
               <div className="flex items-center space-x-2 mb-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-caramel" />
                 <span className="font-mono text-[9px] uppercase tracking-wider text-caramel font-semibold">
                   FIELD NOTE § 01 // ROOM 402 OBSERVATION
                 </span>
               </div>
-              <p className="font-display italic text-sm text-crema/90 leading-snug">
+              <p className="font-display italic text-xs sm:text-sm text-crema/90 leading-snug">
                 "Attention is not a binary switch flipped by a camera shutter. 
                 It is a slow pour that breathes with the cadence of thought and natural morning light."
               </p>
             </div>
           </div>
 
-          {/* 6-Layer Parallax Illustration Column */}
-          <div className="lg:col-span-5 relative mt-8 lg:mt-0">
+          {/* 6-Layer Parallax Illustration Column with Ambient Warm Radial Glow */}
+          <div className="lg:col-span-5 relative mt-6 lg:mt-0 w-full max-w-xl xl:max-w-2xl mx-auto min-w-0 flex items-center justify-center">
+            {/* Atmospheric Radial Vignette Glow - Feathers scene seamlessly into #1C1310 espresso background */}
+            <div
+              className="absolute -inset-10 sm:-inset-16 lg:-inset-24 pointer-events-none rounded-full blur-3xl opacity-75"
+              style={{
+                background: 'radial-gradient(ellipse at center, rgba(184, 119, 47, 0.08) 0%, rgba(58, 38, 25, 0.035) 45%, rgba(28, 19, 16, 0) 70%)',
+              }}
+            />
             <HeroParallaxScene />
           </div>
 

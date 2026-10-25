@@ -25,7 +25,7 @@ export default function EditorialFooter({ onOpenGuide }) {
   return (
     <footer
       ref={containerRef}
-      className="relative pt-24 pb-0 px-6 lg:px-12 bg-espresso text-foam overflow-hidden border-t border-roast/80 select-none"
+      className="relative pt-16 sm:pt-24 pb-0 px-4 sm:px-6 lg:px-12 bg-espresso text-foam overflow-hidden border-t border-roast/80 select-none"
       style={{ backgroundColor: 'var(--espresso)', color: 'var(--foam)' }}
     >
       <div className="max-w-7xl mx-auto w-full">

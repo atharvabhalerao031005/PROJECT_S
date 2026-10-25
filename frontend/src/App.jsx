@@ -156,7 +156,26 @@ export default function App() {
       });
     }
 
+    // 6. Debounced ScrollTrigger refresh on window resize & zoom (visualViewport support)
+    let resizeTimer;
+    const handleResizeOrZoom = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 120);
+    };
+
+    window.addEventListener('resize', handleResizeOrZoom);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResizeOrZoom);
+    }
+
     return () => {
+      window.removeEventListener('resize', handleResizeOrZoom);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResizeOrZoom);
+      }
+      clearTimeout(resizeTimer);
       gsap.ticker.remove(tickerCallback);
       lenis.destroy();
       ScrollTrigger.getAll().forEach((t) => t.kill());

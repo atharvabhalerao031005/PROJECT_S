@@ -45,14 +45,14 @@ export default function StoryPhilosophy() {
       id="philosophy"
       data-theme="light"
       ref={containerRef}
-      className="relative min-h-[160vh] py-24 px-6 lg:px-12 bg-foam text-espresso transition-colors duration-700 select-none"
+      className="relative min-h-[160vh] py-16 sm:py-24 px-4 sm:px-6 lg:px-12 bg-foam text-espresso transition-colors duration-700 select-none"
       style={{ backgroundColor: 'var(--foam)', color: 'var(--espresso)' }}
     >
       <div className="max-w-7xl mx-auto w-full">
         {/* Section Top Header Rule */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-mocha/25 pb-4 mb-16 gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-mocha/25 pb-4 mb-10 sm:mb-16 gap-3">
           <div className="flex items-center space-x-3">
-            <span className="micro-label text-mocha font-semibold">
+            <span className="micro-label text-mocha font-semibold text-[10px] sm:text-[11px]">
               01 / MANIFESTO &amp; ETHICAL FOUNDATION
             </span>
             <span className="text-mocha text-xs font-mono">•</span>
@@ -61,16 +61,16 @@ export default function StoryPhilosophy() {
               <span className="text-[9px] font-mono tracking-wider text-espresso font-medium">ETHICS PROTOCOL 2026</span>
             </div>
           </div>
-          <span className="micro-label text-mocha font-semibold tracking-micro">
+          <span className="micro-label text-mocha font-semibold tracking-micro text-[10px] sm:text-[11px]">
             STUDIO ATELIER PRINCIPLES
           </span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 xl:gap-16">
           
           {/* Left Column: Pinned Dynamic Italic Statement + Stamp */}
-          <div className="lg:col-span-5 lg:sticky lg:top-28 lg:self-start">
-            <div className="space-y-8">
+          <div className="lg:col-span-5 lg:sticky lg:top-24 xl:top-28 lg:self-start min-w-zero">
+            <div className="space-y-6 sm:space-y-8">
               <span className="micro-label text-mocha tracking-micro font-semibold">
                 THE EDITORIAL CREED
               </span>

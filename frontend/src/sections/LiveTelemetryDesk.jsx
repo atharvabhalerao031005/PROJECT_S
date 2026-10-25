@@ -97,7 +97,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
   return (
     <section
       id="live-desk"
-      className="relative min-h-screen py-24 px-6 lg:px-12 bg-espresso text-foam transition-colors duration-700"
+      className="relative min-h-screen py-16 sm:py-24 px-4 sm:px-6 lg:px-12 bg-espresso text-foam transition-colors duration-700"
       style={{ backgroundColor: 'var(--espresso)', color: 'var(--foam)' }}
     >
       {/* Floating Hover Glyph following cursor */}

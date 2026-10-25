@@ -59,29 +59,52 @@ export default function TheSignalPour() {
     const pinContent = pinContentRef.current;
     if (!container || !pinContent) return;
 
-    // Pinning for 300vh
-    const trigger = ScrollTrigger.create({
-      trigger: container,
-      start: 'top top',
-      end: '+=300%',
-      pin: pinContent,
-      scrub: 1.2,
-      onUpdate: (self) => {
-        const p = self.progress;
-        if (p < 0.25) {
-          setActiveStep(0);
-        } else if (p < 0.5) {
-          setActiveStep(1);
-        } else if (p < 0.75) {
-          setActiveStep(2);
-        } else {
-          setActiveStep(3);
-        }
-      },
-    });
+    let resizeTimer;
+    const ctx = gsap.context(() => {
+      ScrollTrigger.create({
+        trigger: container,
+        start: 'top top',
+        end: '+=300%',
+        pin: pinContent,
+        pinSpacing: true,
+        scrub: 1.2,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => {
+          const p = self.progress;
+          if (p < 0.25) {
+            setActiveStep(0);
+          } else if (p < 0.5) {
+            setActiveStep(1);
+          } else if (p < 0.75) {
+            setActiveStep(2);
+          } else {
+            setActiveStep(3);
+          }
+        },
+      });
+    }, container);
+
+    // Debounced ScrollTrigger refresh on window resize & zoom
+    const handleResizeOrZoom = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 120);
+    };
+
+    window.addEventListener('resize', handleResizeOrZoom);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResizeOrZoom);
+    }
 
     return () => {
-      trigger.kill();
+      ctx.revert();
+      window.removeEventListener('resize', handleResizeOrZoom);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResizeOrZoom);
+      }
+      clearTimeout(resizeTimer);
     };
   }, []);
 
@@ -92,16 +115,16 @@ export default function TheSignalPour() {
       className="relative min-h-[400vh] bg-roast text-foam overflow-hidden select-none"
       style={{ backgroundColor: 'var(--roast)', color: 'var(--foam)' }}
     >
-      {/* Pinned Screen Container */}
+      {/* Pinned Screen Container with 100dvh & adaptive padding */}
       <div
         ref={pinContentRef}
-        className="h-screen w-full flex flex-col justify-between py-12 px-6 lg:px-12 max-w-7xl mx-auto"
+        className="min-h-[100dvh] h-[100dvh] w-full flex flex-col justify-between py-6 md:py-8 px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto"
       >
         {/* Top Section Header with Status Pill */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-mocha/40 pb-4 gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-mocha/40 pb-3 sm:pb-4 gap-2 sm:gap-3">
           <div className="flex items-center space-x-3">
             <span className="w-2 h-2 rounded-full bg-caramel animate-incandescent" />
-            <span className="micro-label text-latte font-medium tracking-micro">
+            <span className="micro-label text-latte font-medium tracking-micro text-[10px] sm:text-[11px]">
               02 / THE POUR — MULTIMODAL PIPELINE ARCHITECTURE
             </span>
           </div>
@@ -117,25 +140,25 @@ export default function TheSignalPour() {
         </div>
 
         {/* Center 3-Column Interactive Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center my-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8 items-center my-auto min-w-0">
           
           {/* Left Column: Big Typographic Counter & Stage Name */}
-          <div className="lg:col-span-3 space-y-4">
-            <span className="font-mono text-6xl md:text-8xl font-light text-latte tracking-tighter">
+          <div className="lg:col-span-3 space-y-2 sm:space-y-4 min-w-0">
+            <span className="font-mono text-5xl sm:text-6xl md:text-7xl xl:text-8xl font-light text-latte tracking-tighter">
               {steps[activeStep].num}
-              <span className="text-latte/65 text-2xl font-mono">/04</span>
+              <span className="text-latte/65 text-xl sm:text-2xl font-mono">/04</span>
             </span>
-            <div className="pt-2">
-              <span className="micro-label text-caramel block mb-1 tracking-micro font-semibold">
+            <div className="pt-1 sm:pt-2">
+              <span className="micro-label text-caramel block mb-1 tracking-micro font-semibold text-[10px] sm:text-[11px]">
                 {steps[activeStep].sub}
               </span>
-              <h3 className="font-display text-2xl md:text-3xl text-foam font-medium leading-tight">
+              <h3 className="font-display text-xl sm:text-2xl md:text-3xl text-foam font-medium leading-tight">
                 {steps[activeStep].title}
               </h3>
             </div>
 
             {/* Stepper Dots */}
-            <div className="flex items-center space-x-2 pt-4">
+            <div className="flex items-center space-x-2 pt-2 sm:pt-4">
               {[0, 1, 2, 3].map((idx) => (
                 <div
                   key={idx}
@@ -148,12 +171,12 @@ export default function TheSignalPour() {
           </div>
 
           {/* Center Column: Morphing/Crossfading Custom SVG */}
-          <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 border border-mocha/40 bg-espresso/70 relative min-h-[340px] shadow-2xl">
-            <div className="w-full flex items-center justify-center transition-opacity duration-500">
-              {activeStep === 0 && <PipelineStep1SVG className="w-full h-72" />}
-              {activeStep === 1 && <PipelineStep2SVG className="w-full h-72" />}
-              {activeStep === 2 && <PipelineStep3SVG className="w-full h-72" />}
-              {activeStep === 3 && <PipelineStep4SVG className="w-full h-72" />}
+          <div className="lg:col-span-5 flex flex-col items-center justify-center p-3 sm:p-5 lg:p-6 border border-mocha/40 bg-espresso/70 relative min-h-[220px] sm:min-h-[260px] max-h-[clamp(220px,36dvh,320px)] shadow-2xl min-w-zero overflow-hidden">
+            <div className="w-full h-full flex items-center justify-center transition-opacity duration-500 max-h-[clamp(220px,36dvh,320px)]">
+              {activeStep === 0 && <PipelineStep1SVG className="w-full h-full max-h-[clamp(200px,32dvh,290px)]" />}
+              {activeStep === 1 && <PipelineStep2SVG className="w-full h-full max-h-[clamp(200px,32dvh,290px)]" />}
+              {activeStep === 2 && <PipelineStep3SVG className="w-full h-full max-h-[clamp(200px,32dvh,290px)]" />}
+              {activeStep === 3 && <PipelineStep4SVG className="w-full h-full max-h-[clamp(200px,32dvh,290px)]" />}
             </div>
 
             {/* Corner Crop Marks on the frame */}
@@ -170,28 +193,28 @@ export default function TheSignalPour() {
           </div>
 
           {/* Right Column: Crisp Copy, Code Equation & Marginalia Note */}
-          <div className="lg:col-span-4 space-y-5 lg:pl-6">
-            <span className="micro-label text-latte/75 font-medium tracking-micro">
+          <div className="lg:col-span-4 space-y-3 sm:space-y-4 lg:space-y-5 lg:pl-4 xl:pl-6 min-w-0">
+            <span className="micro-label text-latte/75 font-medium tracking-micro text-[10px] sm:text-[11px]">
               ARCHITECTURAL FORMULATION
             </span>
-            <p className="font-sans text-base md:text-lg text-crema/90 leading-relaxed font-normal">
+            <p className="font-sans text-xs sm:text-sm md:text-base lg:text-lg text-crema/90 leading-relaxed font-normal">
               {steps[activeStep].copy}
             </p>
 
             {/* Code / Algorithm Snippet */}
-            <div className="p-4 bg-espresso/90 border border-mocha/50 font-mono text-xs text-caramel shadow-md">
-              <span className="text-latte/70 block text-[10px] mb-1 font-mono tracking-wider font-semibold">// TELEMETRY EQUATION</span>
+            <div className="p-3 sm:p-4 bg-espresso/90 border border-mocha/50 font-mono text-[10px] sm:text-xs text-caramel shadow-md code-defend">
+              <span className="text-latte/70 block text-[9px] sm:text-[10px] mb-1 font-mono tracking-wider font-semibold">// TELEMETRY EQUATION</span>
               <code>{steps[activeStep].code}</code>
             </div>
 
             {/* Tilted Step Marginalia Note */}
             <div
-              className="marginalia-note p-3.5 border border-mocha/40 bg-espresso/60 relative shadow-sm"
+              className="marginalia-note p-3 sm:p-3.5 border border-mocha/40 bg-espresso/60 relative shadow-sm"
               style={{ transform: `rotate(${steps[activeStep].tilt})` }}
             >
               <div className="flex items-center space-x-1.5 mb-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-caramel" />
-                <span className="font-mono text-[9px] text-caramel uppercase tracking-wider font-semibold">
+                <span className="font-mono text-[8px] sm:text-[9px] text-caramel uppercase tracking-wider font-semibold">
                   PIPELINE FIELD NOTE
                 </span>
               </div>
