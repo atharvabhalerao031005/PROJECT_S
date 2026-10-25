@@ -65,12 +65,15 @@ class PedagogicalAgent:
         if self.gemini_client:
             try:
                 import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+                try:
                     future = executor.submit(
                         self._call_gemini,
                         fused_score, trend, active_count, visual_attention, acoustic_score
                     )
-                    return future.result(timeout=4.0)
+                    return future.result(timeout=6.5)
+                finally:
+                    executor.shutdown(wait=False, cancel_futures=True)
             except Exception:
                 pass
 
@@ -117,7 +120,7 @@ class PedagogicalAgent:
         )
 
         if self.is_modern_genai:
-            model_names = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+            model_names = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-2.5-flash"]
             response = None
             used_model = "gemini-3.8-flash"
             for m in model_names:

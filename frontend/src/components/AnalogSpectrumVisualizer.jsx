@@ -32,51 +32,93 @@ export default function AnalogSpectrumVisualizer({
   const [animatedBins, setAnimatedBins] = useState(
     Array.from({ length: 16 }, (_, i) => 0.15 + 0.5 * Math.sin((i / 15) * Math.PI))
   );
+
+  // Ballistics state
+  const vuAveragedBinsRef = useRef(Array(16).fill(0.15));
   const peakHoldsRef = useRef(Array(16).fill(0.2));
   const peakDecayTimersRef = useRef(Array(16).fill(0));
+  const clipOverloadRef = useRef(0); // 0 to 1 brightness of master clip lamp
   const rafRef = useRef(null);
 
-  // Smooth fallback animation & peak decay loop
   useEffect(() => {
     let phase = 0;
+
     const updatePhysics = () => {
-      phase += 0.06;
+      phase += 0.05;
 
       const hasLiveBins = Array.isArray(spectralBins) && spectralBins.length === 16;
-      const targetBins = hasLiveBins
+      const rawBins = hasLiveBins
         ? spectralBins
         : Array.from({ length: 16 }, (_, i) => {
             // Natural bell curve centered on voice band (~1kHz, bins 5-8)
             const center = isSpeechActive ? 6.5 : 4.0;
             const dist = Math.abs(i - center);
             const bell = Math.exp(-0.5 * (dist / 2.2) ** 2);
-            const wobble = Math.sin(phase * 1.5 + i * 0.45) * 0.12 + Math.cos(phase * 0.8 - i * 0.3) * 0.08;
-            const speechBoost = isSpeechActive ? 0.35 : 0.08;
-            return Math.min(0.96, Math.max(0.06, (bell * 0.65 + speechBoost + wobble) * (isStreaming ? 1.0 : 0.25)));
+            const wobble =
+              Math.sin(phase * 1.6 + i * 0.42) * 0.11 +
+              Math.cos(phase * 0.85 - i * 0.28) * 0.07;
+            const speechBoost = isSpeechActive ? 0.38 : 0.08;
+            return Math.min(
+              0.98,
+              Math.max(0.05, (bell * 0.65 + speechBoost + wobble) * (isStreaming ? 1.0 : 0.25))
+            );
           });
 
-      // Update peak holds with ballistics
+      // Apply Mode Physics:
+      // - VU: 300ms ANSI integration ballistics (gentle smoothing, low overshoot)
+      // - PEAK: Ultra-fast attack, long hold (~1.2s), logarithmic ballistic gravity fall
+      // - TAPE: Soft-clip tape saturation compression curve
+      const newVuBins = [...vuAveragedBinsRef.current];
       const newPeaks = [...peakHoldsRef.current];
       const newDecays = [...peakDecayTimersRef.current];
+      let hasOverload = false;
 
-      for (let i = 0; i < 16; i++) {
-        const currentVal = targetBins[i] || 0.05;
-        if (currentVal >= newPeaks[i]) {
-          newPeaks[i] = currentVal;
-          newDecays[i] = 18; // Hold peak for ~18 frames
+      const processedBins = rawBins.map((rawVal, i) => {
+        let val = rawVal;
+
+        if (meterMode === 'TAPE') {
+          // Warm tape saturation curve: soft non-linear compression
+          val = Math.tanh(rawVal * 1.45);
+        }
+
+        // VU Ballistics (Integration time constant ~300ms)
+        const vuSmoothing = meterMode === 'VU' ? 0.18 : 0.45;
+        newVuBins[i] = newVuBins[i] + (val - newVuBins[i]) * vuSmoothing;
+
+        const effectiveVal = meterMode === 'VU' ? newVuBins[i] : val;
+
+        // Check for overload in top 2 segments
+        if (effectiveVal > 0.86) hasOverload = true;
+
+        // Peak Hold Ballistics with Logarithmic Fall
+        if (effectiveVal >= newPeaks[i]) {
+          newPeaks[i] = effectiveVal;
+          // Hold peak: longer in PEAK mode (75 frames), shorter in VU mode (25 frames)
+          newDecays[i] = meterMode === 'PEAK' ? 75 : 25;
         } else {
           if (newDecays[i] > 0) {
             newDecays[i] -= 1;
           } else {
-            // Analog ballistic gravity fall
-            newPeaks[i] = Math.max(currentVal, newPeaks[i] - 0.022);
+            // Logarithmic ballistic decay: accelerates downward naturally like physical gravity
+            const decayFactor = meterMode === 'PEAK' ? 0.955 : 0.92;
+            newPeaks[i] = Math.max(effectiveVal, newPeaks[i] * decayFactor - 0.005);
           }
         }
+
+        return effectiveVal;
+      });
+
+      // Master overload indicator incandescent decay
+      if (hasOverload) {
+        clipOverloadRef.current = 1.0;
+      } else {
+        clipOverloadRef.current = Math.max(0, clipOverloadRef.current - 0.035);
       }
 
+      vuAveragedBinsRef.current = newVuBins;
       peakHoldsRef.current = newPeaks;
       peakDecayTimersRef.current = newDecays;
-      setAnimatedBins(targetBins);
+      setAnimatedBins(processedBins);
 
       rafRef.current = requestAnimationFrame(updatePhysics);
     };
@@ -85,7 +127,7 @@ export default function AnalogSpectrumVisualizer({
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [spectralBins, isSpeechActive, isStreaming]);
+  }, [spectralBins, isSpeechActive, isStreaming, meterMode]);
 
   const activeBandData = hoveredBand !== null ? FREQUENCY_BANDS[hoveredBand] : null;
   const activeBandValue = hoveredBand !== null ? animatedBins[hoveredBand] : null;
@@ -94,49 +136,84 @@ export default function AnalogSpectrumVisualizer({
     : audioDb.toFixed(1);
 
   return (
-    <div className="relative border border-roast bg-espresso/95 p-6 md:p-8 space-y-6 shadow-2xl select-none">
+    <div className="relative border border-roast bg-espresso/95 p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 shadow-2xl select-none overflow-hidden">
+      {/* Acrylic Glass Cover Sheen Glare across the Rack Bridge */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-20"
+        style={{
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 30%, transparent 60%)',
+        }}
+      />
+
       {/* Top Console Branding & Status Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-roast/80 pb-4 gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-roast/80 pb-3 sm:pb-4 gap-2 sm:gap-3 relative z-10">
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
             <span className="w-2 h-2 rounded-full bg-caramel animate-incandescent" />
             <span className="font-mono text-xs uppercase tracking-micro text-latte font-medium">
               REVOX A77 // STUDIO ACOUSTIC EQUALIZER
             </span>
+            {/* Master Overload Peak Indicator Lamp */}
+            <div className="flex items-center space-x-1.5 pl-2 border-l border-mocha/40">
+              <span
+                className="w-2 h-2 rounded-full transition-all duration-75"
+                style={{
+                  backgroundColor: clipOverloadRef.current > 0.05 ? '#D94E34' : '#3A2619',
+                  boxShadow:
+                    clipOverloadRef.current > 0.05
+                      ? `0 0 ${8 * clipOverloadRef.current}px rgba(217, 78, 52, 0.9)`
+                      : 'none',
+                }}
+              />
+              <span
+                className="font-mono text-[9px] uppercase tracking-wider transition-colors duration-150"
+                style={{
+                  color: clipOverloadRef.current > 0.05 ? '#D94E34' : 'var(--mocha)',
+                  fontWeight: clipOverloadRef.current > 0.05 ? 600 : 400,
+                }}
+              >
+                CLIP
+              </span>
+            </div>
           </div>
-          <span className="font-mono text-[10px] text-mocha tracking-wider block">
-            16-BAND PARALLEL NYQUIST FILTER BANK • 16.0 kHz PCM BUFFER
+          <span className="font-mono text-[9px] sm:text-[10px] text-mocha tracking-wider block">
+            16-BAND PARALLEL NYQUIST FILTER BANK • 16.0 kHz PCM BUFFER • BALLISTIC DAMPED
           </span>
         </div>
 
         {/* Console Controls / Mode Selector */}
-        <div className="flex items-center space-x-2">
-          <div className="flex border border-mocha/50 bg-roast/40 p-0.5">
-            {['VU', 'PEAK', 'TAPE'].map((mode) => (
+        <div className="flex items-center space-x-2 sm:space-x-2.5">
+          <div className="flex border border-mocha/50 bg-roast/40 p-0.5 shadow-inner">
+            {[
+              { id: 'VU', label: 'VU (AVG)' },
+              { id: 'PEAK', label: 'PEAK HOLD' },
+              { id: 'TAPE', label: 'TAPE SAT' },
+            ].map(({ id, label }) => (
               <button
-                key={mode}
-                onClick={() => setMeterMode(mode)}
-                className={`px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors cursor-pointer ${
-                  meterMode === mode
-                    ? 'bg-caramel text-espresso font-bold'
+                key={id}
+                onClick={() => setMeterMode(id)}
+                className={`px-2 sm:px-2.5 py-1 font-mono text-[9px] sm:text-[10px] uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+                  meterMode === id
+                    ? 'bg-caramel text-espresso font-bold shadow-sm'
                     : 'text-mocha hover:text-latte'
                 }`}
               >
-                {mode}
+                {label}
               </button>
             ))}
           </div>
 
-          <div className="font-mono text-[11px] text-caramel border border-mocha/40 bg-roast/30 px-3 py-1">
+          <div className="font-mono text-[10px] sm:text-[11px] text-caramel border border-mocha/40 bg-roast/30 px-2.5 sm:px-3 py-1 shadow-inner">
             RMS {audioDb ? `${audioDb.toFixed(1)} dB` : '-18.4 dB'}
           </div>
         </div>
       </div>
 
-      {/* Main 16-Bar Equalizer Rack Display */}
-      <div className="relative pt-4 pb-2">
-        {/* Subtle Background Calibration Grid Lines */}
+      {/* Main 16-Bar Laboratory Equalizer Rack Display */}
+      <div className="relative pt-3 sm:pt-4 pb-2 z-10">
+        {/* Calibrated Horizontal Reference Grid Lines */}
         <div className="absolute inset-0 top-4 bottom-10 pointer-events-none flex flex-col justify-between opacity-15">
+          <div className="border-b border-caramel w-full" />
           <div className="border-b border-latte w-full" />
           <div className="border-b border-mocha w-full" />
           <div className="border-b border-mocha w-full" />
@@ -144,22 +221,26 @@ export default function AnalogSpectrumVisualizer({
         </div>
 
         {/* Decibel Reference Axis Markers (Left side) */}
-        <div className="flex items-stretch gap-1.5 md:gap-2.5 h-48 md:h-56">
-          <div className="flex flex-col justify-between font-mono text-[9px] text-mocha/80 pr-1 py-1 text-right select-none w-6">
-            <span className="text-caramel">+3dB</span>
-            <span className="text-latte">0dB</span>
+        <div className="flex items-stretch gap-1 sm:gap-1.5 md:gap-2.5 h-44 sm:h-48 md:h-56">
+          <div className="flex flex-col justify-between font-mono text-[8px] sm:text-[9px] text-mocha/80 pr-0.5 sm:pr-1 py-1 text-right select-none w-5 sm:w-6 shrink-0">
+            <span className="text-[#D94E34] font-bold">+3dB</span>
+            <span className="text-caramel font-semibold">0dB</span>
+            <span className="text-latte">-3dB</span>
             <span>-6dB</span>
             <span>-12dB</span>
             <span>-24dB</span>
             <span>-40dB</span>
           </div>
 
-          {/* 16 Frequency Bars */}
-          <div className="flex-1 grid grid-cols-16 gap-1 md:gap-2 h-full items-end">
+          {/* 16 Frequency Bars with Laboratory LED Luminescence */}
+          <div className="flex-1 grid grid-cols-16 gap-0.5 sm:gap-1 md:gap-2 h-full items-end min-w-0">
             {animatedBins.map((binVal, idx) => {
               const peakVal = peakHoldsRef.current[idx] || binVal;
               const activeSegments = Math.round(binVal * TOTAL_SEGMENTS);
-              const peakSegmentIndex = Math.min(TOTAL_SEGMENTS - 1, Math.floor(peakVal * TOTAL_SEGMENTS));
+              const peakSegmentIndex = Math.min(
+                TOTAL_SEGMENTS - 1,
+                Math.floor(peakVal * TOTAL_SEGMENTS)
+              );
               const isHovered = hoveredBand === idx;
 
               return (
@@ -167,7 +248,7 @@ export default function AnalogSpectrumVisualizer({
                   key={idx}
                   onMouseEnter={() => setHoveredBand(idx)}
                   onMouseLeave={() => setHoveredBand(null)}
-                  className={`group relative flex flex-col justify-end h-full cursor-pointer transition-transform duration-150 ${
+                  className={`group relative flex flex-col justify-end h-full cursor-pointer transition-transform duration-200 ${
                     isHovered ? 'scale-105' : ''
                   }`}
                 >
@@ -177,39 +258,72 @@ export default function AnalogSpectrumVisualizer({
                       const isLit = segIdx < activeSegments;
                       const isPeak = segIdx === peakSegmentIndex;
 
-                      // Color coding according to studio standards:
-                      // Top 2: Overload / Peak warning (Amber-Red #D94E34)
-                      // Next 3: Upper headroom (#B8772F caramel)
-                      // Next 4: Optimal dialogue (#D2AE82 warm latte)
-                      // Lower: Ambient floor (#6B4630 mocha)
+                      // Authentic Laboratory Color Hierarchy:
+                      // Top 2: Overload Red (#D94E34)
+                      // Next 3: Headroom Caramel (#B8772F)
+                      // Next 4: Speech Clarity Latte (#D2AE82)
+                      // Bottom 5: Room Ambient Mocha (#6B4630)
                       let litColor = '#6B4630';
-                      let glowStyle = 'none';
+                      let litGlow = 'none';
+                      let phosphorCore = 'rgba(255, 255, 255, 0.2)';
 
                       if (segIdx >= TOTAL_SEGMENTS - 2) {
-                        litColor = '#D94E34'; // Peak Clip
-                        if (isLit) glowStyle = '0 0 6px rgba(217, 78, 52, 0.8)';
+                        litColor = '#D94E34'; // Peak Clip Red
+                        if (isLit) {
+                          litGlow = '0 0 7px rgba(217, 78, 52, 0.85), 0 0 14px rgba(217, 78, 52, 0.35)';
+                          phosphorCore = 'rgba(255, 200, 200, 0.4)';
+                        }
                       } else if (segIdx >= TOTAL_SEGMENTS - 5) {
-                        litColor = '#B8772F'; // Caramel Accent
-                        if (isLit) glowStyle = '0 0 5px rgba(184, 119, 47, 0.7)';
+                        litColor = '#B8772F'; // Amber Caramel
+                        if (isLit) {
+                          litGlow = '0 0 6px rgba(184, 119, 47, 0.75), 0 0 12px rgba(184, 119, 47, 0.25)';
+                          phosphorCore = 'rgba(255, 240, 220, 0.35)';
+                        }
                       } else if (segIdx >= TOTAL_SEGMENTS - 9) {
-                        litColor = '#D2AE82'; // Latte Mid
-                        if (isLit) glowStyle = '0 0 3px rgba(210, 174, 130, 0.4)';
+                        litColor = '#D2AE82'; // Warm Latte
+                        if (isLit) {
+                          litGlow = '0 0 4px rgba(210, 174, 130, 0.55)';
+                          phosphorCore = 'rgba(255, 255, 255, 0.25)';
+                        }
+                      } else {
+                        litColor = '#8C6239'; // Ambient Foundation
+                        if (isLit) {
+                          litGlow = '0 0 3px rgba(140, 98, 57, 0.4)';
+                          phosphorCore = 'rgba(255, 255, 255, 0.15)';
+                        }
                       }
 
                       return (
                         <div
                           key={segIdx}
-                          className="h-full w-full rounded-[1px] transition-all duration-75 relative"
+                          className="h-full w-full rounded-[1px] transition-all duration-75 relative overflow-hidden"
                           style={{
                             backgroundColor: isLit
                               ? litColor
                               : isPeak
-                              ? '#B8772F'
-                              : 'rgba(58, 38, 25, 0.45)',
-                            boxShadow: isLit ? glowStyle : isPeak ? '0 0 4px #B8772F' : 'none',
-                            opacity: isLit || isPeak ? 1 : 0.35,
+                              ? '#FAF5EC'
+                              : 'rgba(42, 26, 18, 0.45)',
+                            boxShadow: isLit
+                              ? litGlow
+                              : isPeak
+                              ? '0 0 6px #FAF5EC, 0 0 10px rgba(184, 119, 47, 0.6)'
+                              : 'none',
+                            opacity: isLit ? 1 : isPeak ? 0.95 : 0.3,
+                            border: isLit
+                              ? '1px solid rgba(255, 255, 255, 0.15)'
+                              : '1px solid rgba(58, 38, 25, 0.5)',
                           }}
-                        />
+                        >
+                          {/* Inner Diffuser Lens Highlight Core */}
+                          {isLit && (
+                            <div
+                              className="absolute inset-0 pointer-events-none"
+                              style={{
+                                background: `linear-gradient(to bottom, ${phosphorCore} 0%, transparent 60%)`,
+                              }}
+                            />
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -217,7 +331,7 @@ export default function AnalogSpectrumVisualizer({
                   {/* Frequency Label Underneath */}
                   <div className="pt-2 text-center">
                     <span
-                      className={`font-mono text-[9px] md:text-[10px] block transition-colors ${
+                      className={`font-mono text-[8px] sm:text-[9px] md:text-[10px] block transition-colors duration-150 truncate ${
                         isHovered
                           ? 'text-caramel font-bold'
                           : 'text-mocha group-hover:text-latte'
@@ -232,9 +346,10 @@ export default function AnalogSpectrumVisualizer({
           </div>
 
           {/* Right Reference Scale */}
-          <div className="flex flex-col justify-between font-mono text-[9px] text-mocha/80 pl-1 py-1 text-left select-none w-6">
-            <span className="text-caramel">+3</span>
-            <span className="text-latte">0</span>
+          <div className="flex flex-col justify-between font-mono text-[8px] sm:text-[9px] text-mocha/80 pl-0.5 sm:pl-1 py-1 text-left select-none w-5 sm:w-6 shrink-0">
+            <span className="text-[#D94E34] font-bold">+3</span>
+            <span className="text-caramel font-semibold">0</span>
+            <span className="text-latte">-3</span>
             <span>-6</span>
             <span>-12</span>
             <span>-24</span>
@@ -244,23 +359,23 @@ export default function AnalogSpectrumVisualizer({
       </div>
 
       {/* Dynamic Hover Details & Tape Saturation Indicator */}
-      <div className="pt-3 border-t border-roast/60 flex flex-col md:flex-row md:items-center justify-between text-xs font-mono gap-3">
-        <div className="flex items-center space-x-3">
-          <span className="text-mocha uppercase text-[10px]">INSPECTED OCTAVE:</span>
+      <div className="pt-3 border-t border-roast/60 flex flex-col md:flex-row md:items-center justify-between text-xs font-mono gap-2 sm:gap-3 relative z-10 overflow-hidden">
+        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+          <span className="text-mocha uppercase text-[9px] sm:text-[10px] shrink-0">INSPECTED OCTAVE:</span>
           {activeBandData ? (
-            <span className="text-crema">
+            <span className="text-crema truncate text-[11px] sm:text-xs">
               <span className="text-caramel font-semibold">{activeBandData.hz}</span> —{' '}
               <span className="text-latte">{activeBandData.name}</span>{' '}
               <span className="text-mocha">({activeBandDb} dB)</span>
             </span>
           ) : (
-            <span className="text-mocha italic">
+            <span className="text-mocha italic truncate text-[11px] sm:text-xs">
               Hover across frequency bands to analyze acoustic formant resonance
             </span>
           )}
         </div>
 
-        <div className="flex items-center space-x-4 text-[10px] text-mocha">
+        <div className="flex items-center space-x-3 sm:space-x-4 text-[9px] sm:text-[10px] text-mocha shrink-0">
           <span className="flex items-center space-x-1.5">
             <span
               className={`w-1.5 h-1.5 rounded-full ${
@@ -271,8 +386,8 @@ export default function AnalogSpectrumVisualizer({
               {isSpeechActive ? 'VOCAL ENERGY DETECTED' : 'ROOM FLOOR CONTEMPLATION'}
             </span>
           </span>
-          <span className="text-mocha/50">|</span>
-          <span className="text-latte">CALIBRATION: 44.1kHz • 32-BIT FLOAT</span>
+          <span className="text-mocha/50 hidden sm:inline">|</span>
+          <span className="text-latte hidden sm:inline">CALIBRATION: 44.1kHz • 32-BIT FLOAT</span>
         </div>
       </div>
     </div>

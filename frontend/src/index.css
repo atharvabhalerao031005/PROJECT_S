@@ -3,6 +3,16 @@
 @tailwind utilities;
 
 :root {
+  /* RGB Triplets for Tailwind alpha-value opacity support */
+  --espresso-rgb: 28 19 16;
+  --roast-rgb:    58 38 25;
+  --mocha-rgb:    107 70 48;
+  --caramel-rgb:  184 119 47;
+  --latte-rgb:    210 174 130;
+  --crema-rgb:    235 220 194;
+  --foam-rgb:     247 240 227;
+
+  /* Legacy & Direct Hex Variables */
   --espresso: #1C1310;  /* Primary deep background */
   --roast:    #3A2619;  /* Secondary dark surface / dividers */
   --mocha:    #6B4630;  /* Muted structural borders & secondary text */
@@ -119,7 +129,23 @@ body {
   animation: tapeBlink 1.4s steps(1, start) infinite;
 }
 
-/* Tactile Studio Status Pill */
+/* 35mm Analog Film Shutter Weave - GPU Accelerated Zero Cost */
+@keyframes filmWeave {
+  0% { transform: translate3d(0, 0, 0); }
+  20% { transform: translate3d(-1.5px, 1.5px, 0); }
+  40% { transform: translate3d(1.5px, -1px, 0); }
+  60% { transform: translate3d(-1px, -1.5px, 0); }
+  80% { transform: translate3d(1px, 1px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+.animate-film-weave {
+  animation: filmWeave 0.45s steps(1) infinite;
+  will-change: transform;
+  contain: strict;
+}
+
+/* Tactile Studio Status Pill - Dark Surface Default */
 .tactile-status-pill {
   display: inline-flex;
   align-items: center;
@@ -138,6 +164,29 @@ body {
 .tactile-status-pill:hover {
   border-color: var(--caramel);
   color: var(--foam);
+}
+
+/* Tactile Studio Status Pill - Warm Paper Edition */
+.tactile-status-pill-paper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0.65rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  border: 1px solid rgba(107, 70, 48, 0.3);
+  background-color: rgba(235, 220, 194, 0.55);
+  color: var(--espresso);
+  backdrop-filter: blur(4px);
+  transition: all 0.25s ease;
+}
+
+.tactile-status-pill-paper:hover {
+  border-color: var(--caramel);
+  background-color: rgba(235, 220, 194, 0.85);
+  color: var(--espresso);
 }
 
 /* Editorial Marginalia Sticky Note */
@@ -185,4 +234,25 @@ body {
 .line-inner {
   display: block;
   transform: translateY(0);
+}
+
+/* Dynamic Navbar Adaptive Theming */
+header[data-nav-theme="light"] {
+  background-color: rgba(247, 240, 227, 0.92) !important;
+  border-bottom-color: rgba(107, 70, 48, 0.25) !important;
+  color: var(--espresso) !important;
+  box-shadow: 0 4px 20px -2px rgba(58, 38, 25, 0.06);
+}
+
+header[data-nav-theme="dark"] {
+  background-color: rgba(28, 19, 16, 0.88) !important;
+  border-bottom-color: rgba(58, 38, 25, 0.6) !important;
+  color: var(--foam) !important;
+}
+
+/* Editorial Paper Rules & Archival Callouts */
+.archival-callout-paper {
+  background-color: rgba(235, 220, 194, 0.4);
+  border: 1px solid rgba(107, 70, 48, 0.28);
+  box-shadow: 0 2px 10px rgba(58, 38, 25, 0.03);
 }

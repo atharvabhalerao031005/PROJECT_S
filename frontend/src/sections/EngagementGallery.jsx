@@ -106,18 +106,18 @@ export default function EngagementGallery() {
       <div className="h-screen w-full flex flex-col justify-between py-12 px-6 lg:px-12">
         
         {/* Section Top Header */}
-        <div className="max-w-7xl mx-auto w-full flex flex-col sm:flex-row sm:items-center justify-between border-b border-roast pb-4 gap-3">
+        <div className="max-w-7xl mx-auto w-full flex flex-col sm:flex-row sm:items-center justify-between border-b border-roast/80 pb-4 gap-3">
           <div className="flex items-center space-x-3">
-            <span className="micro-label text-mocha tracking-micro">
+            <span className="micro-label text-latte/75 font-medium tracking-micro">
               04 / SPACE &amp; SESSION DYNAMICS
             </span>
-            <span className="text-mocha text-xs font-mono">•</span>
+            <span className="text-latte/50 text-xs font-mono">•</span>
             <div className="tactile-status-pill border-mocha/40 bg-roast/40">
               <span className="w-1.5 h-1.5 rounded-full bg-caramel animate-incandescent" />
-              <span className="text-latte">CHOREOGRAPHY LOG</span>
+              <span className="text-latte font-medium">CHOREOGRAPHY LOG</span>
             </div>
           </div>
-          <span className="font-mono text-xs text-caramel tracking-wider">
+          <span className="font-mono text-xs text-caramel tracking-wider font-semibold">
             CHRONOLOGICAL SESSION CHOREOGRAPHY
           </span>
         </div>
@@ -132,12 +132,12 @@ export default function EngagementGallery() {
             {panels.map((panel, idx) => (
               <React.Fragment key={idx}>
                 <div
-                  className={`w-[420px] flex-shrink-0 border border-roast p-8 bg-roast/35 flex flex-col justify-between transition-all duration-300 hover:border-caramel/80 hover:bg-roast/50 shadow-xl ${panel.heightClass}`}
+                  className={`w-[420px] flex-shrink-0 border border-roast/80 p-8 bg-roast/35 flex flex-col justify-between transition-all duration-300 hover:border-caramel/80 hover:bg-roast/50 shadow-xl ${panel.heightClass}`}
                 >
                   {/* Top: Interval & Icon */}
                   <div>
                     <div className="flex items-center justify-between border-b border-roast/70 pb-3 mb-6">
-                      <span className="font-mono text-xs text-caramel tracking-widest">
+                      <span className="font-mono text-xs text-caramel tracking-widest font-semibold">
                         {panel.time}
                       </span>
                       <div className="p-1.5 rounded-full border border-mocha/40 bg-roast/50">
@@ -145,14 +145,14 @@ export default function EngagementGallery() {
                       </div>
                     </div>
 
-                    <span className="micro-label text-mocha block mb-1 tracking-micro">
+                    <span className="micro-label text-latte/75 font-medium block mb-1 tracking-micro">
                       {panel.subtitle}
                     </span>
                     <h3 className="font-display text-2xl text-foam font-normal">
                       {panel.title}
                     </h3>
 
-                    <p className="font-sans text-sm text-crema/80 leading-relaxed mt-4">
+                    <p className="font-sans text-sm text-crema/85 leading-relaxed mt-4 font-normal">
                       {panel.desc}
                     </p>
                   </div>
@@ -160,12 +160,12 @@ export default function EngagementGallery() {
                   {/* Bottom: Metrics Callout */}
                   <div className="pt-6 border-t border-roast/70 flex items-center justify-between font-mono">
                     <div>
-                      <span className="text-[10px] text-mocha uppercase block">{panel.statLabel}</span>
+                      <span className="text-[10px] text-latte/70 uppercase block font-medium">{panel.statLabel}</span>
                       <span className="text-base text-latte font-medium">{panel.statVal}</span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] text-mocha uppercase block">FUSED SCORE</span>
-                      <span className="text-lg text-caramel font-semibold">{panel.fused}</span>
+                      <span className="text-[10px] text-latte/70 uppercase block font-medium">FUSED SCORE</span>
+                      <span className="text-lg text-caramel font-bold">{panel.fused}</span>
                     </div>
                   </div>
 
@@ -174,12 +174,12 @@ export default function EngagementGallery() {
                 {/* Marginalia Note inserted after the Mid-Session Dip card (idx === 2) */}
                 {idx === 2 && (
                   <div
-                    className="marginalia-note w-[310px] flex-shrink-0 p-6 border border-mocha/40 bg-roast/30 self-center"
+                    className="marginalia-note w-[310px] flex-shrink-0 p-6 border border-mocha/40 bg-roast/35 self-center shadow-md"
                     style={{ transform: 'rotate(-1.6deg)' }}
                   >
                     <div className="flex items-center space-x-2 mb-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-caramel" />
-                      <span className="font-mono text-[9px] text-caramel uppercase tracking-widest">
+                      <span className="font-mono text-[9px] text-caramel uppercase tracking-widest font-semibold">
                         ATELIER LAB OBSERVATION
                       </span>
                     </div>
@@ -187,7 +187,7 @@ export default function EngagementGallery() {
                       "At minute 28, physiological stillness triggers the inactivity dampener. 
                       A subtle prompt from the pedagogical agent restores energy without breaking the room's intimacy."
                     </p>
-                    <span className="font-mono text-[8px] text-mocha block mt-3">
+                    <span className="font-mono text-[8px] text-latte/70 block mt-3 font-medium">
                       REF: COGNITIVE FATIGUE RECOVERY STUDY
                     </span>
                   </div>
@@ -198,12 +198,12 @@ export default function EngagementGallery() {
         </div>
 
         {/* Bottom Horizontal Drag/Scroll Guide */}
-        <div className="max-w-7xl mx-auto w-full flex items-center justify-between border-t border-roast pt-4 text-xs font-mono text-mocha">
+        <div className="max-w-7xl mx-auto w-full flex items-center justify-between border-t border-roast/80 pt-4 text-xs font-mono text-latte/75">
           <div className="flex items-center space-x-2">
             <span className="w-1.5 h-1.5 rounded-full bg-caramel animate-incandescent" />
-            <span>SCROLL DOWN TO TRAVERSE HORIZONTAL DYNAMICS</span>
+            <span className="font-medium">SCROLL DOWN TO TRAVERSE HORIZONTAL DYNAMICS</span>
           </div>
-          <span className="text-latte">5 SESSION INTERVALS • 60 MIN ROTATION</span>
+          <span className="text-latte font-medium">5 SESSION INTERVALS • 60 MIN ROTATION</span>
         </div>
 
       </div>

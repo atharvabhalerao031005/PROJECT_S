@@ -7,13 +7,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        espresso: 'var(--espresso)',
-        roast: 'var(--roast)',
-        mocha: 'var(--mocha)',
-        caramel: 'var(--caramel)',
-        latte: 'var(--latte)',
-        crema: 'var(--crema)',
-        foam: 'var(--foam)',
+        espresso: 'rgb(var(--espresso-rgb) / <alpha-value>)',
+        roast: 'rgb(var(--roast-rgb) / <alpha-value>)',
+        mocha: 'rgb(var(--mocha-rgb) / <alpha-value>)',
+        caramel: 'rgb(var(--caramel-rgb) / <alpha-value>)',
+        latte: 'rgb(var(--latte-rgb) / <alpha-value>)',
+        crema: 'rgb(var(--crema-rgb) / <alpha-value>)',
+        foam: 'rgb(var(--foam-rgb) / <alpha-value>)',
       },
       fontFamily: {
         display: ['Fraunces', 'serif'],

@@ -47,13 +47,13 @@ export default function InlineConfigAndLogs() {
   return (
     <section
       id="calibration"
-      className="relative min-h-screen py-24 px-6 lg:px-12 bg-foam text-espresso transition-colors duration-700 select-none"
+      className="relative min-h-screen py-16 sm:py-24 px-4 sm:px-6 lg:px-12 bg-foam text-espresso transition-colors duration-700 select-none overflow-hidden"
       style={{ backgroundColor: 'var(--foam)', color: 'var(--espresso)' }}
     >
       <div className="max-w-7xl mx-auto w-full">
         
         {/* Section Top Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-mocha/30 pb-4 mb-12 gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-mocha/30 pb-4 mb-8 sm:mb-12 gap-4">
           <div>
             <div className="flex items-center space-x-3 mb-1">
               <span className="micro-label text-caramel tracking-micro">
@@ -65,7 +65,7 @@ export default function InlineConfigAndLogs() {
                 <span className="text-[9px] font-mono tracking-wider">RIG ALPHA READY</span>
               </div>
             </div>
-            <h2 className="font-display text-3xl md:text-5xl text-espresso font-normal tracking-tight">
+            <h2 className="font-display text-2xl sm:text-3xl md:text-5xl text-espresso font-normal tracking-tight">
               Architectural Calibration &amp; Schedules
             </h2>
           </div>
@@ -73,56 +73,56 @@ export default function InlineConfigAndLogs() {
           <div className="mt-2 md:mt-0 flex items-center space-x-3">
             <button
               onClick={handleExportCsv}
-              className="px-6 py-3 border border-espresso bg-espresso text-foam font-mono text-xs uppercase tracking-wider hover:bg-caramel hover:border-caramel hover:text-espresso transition-colors cursor-pointer shadow-md"
+              className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 border border-espresso bg-espresso text-foam font-mono text-xs uppercase tracking-wider hover:bg-caramel hover:border-caramel hover:text-espresso transition-colors cursor-pointer shadow-md text-center"
             >
               Export Attendance Ledger (.CSV)
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 lg:gap-16 items-start">
           
           {/* Left 6 Columns: Typographic Timetable + Stylized Campus Map SVG */}
-          <div className="lg:col-span-6 space-y-10">
+          <div className="lg:col-span-6 space-y-8 sm:space-y-10 min-w-0">
             
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="micro-label text-mocha tracking-micro">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="micro-label text-mocha tracking-micro text-[10px] sm:text-[11px]">
                   SESSION TIMETABLE // STUDIO ROTATION
                 </span>
-                <span className="font-mono text-xs text-caramel">UTC HARMONIZED</span>
+                <span className="font-mono text-xs text-caramel shrink-0">UTC HARMONIZED</span>
               </div>
 
-              <div className="border border-mocha/30 divide-y divide-mocha/20 bg-crema/25 shadow-sm">
-                <div className="p-4 flex items-baseline justify-between font-mono text-xs hover:bg-crema/40 transition-colors">
-                  <span className="text-espresso font-semibold">09:00 — 10:15 UTC</span>
-                  <span className="text-mocha">Spatial Theory &amp; Tectonics</span>
-                  <span className="text-caramel font-semibold">[ACTIVE]</span>
+              <div className="border border-mocha/30 divide-y divide-mocha/20 bg-crema/25 shadow-sm overflow-hidden">
+                <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-baseline justify-between gap-1.5 sm:gap-2 font-mono text-xs hover:bg-crema/40 transition-colors">
+                  <span className="text-espresso font-semibold shrink-0">09:00 — 10:15 UTC</span>
+                  <span className="text-mocha truncate">Spatial Theory &amp; Tectonics</span>
+                  <span className="text-caramel font-semibold shrink-0">[ACTIVE]</span>
                 </div>
-                <div className="p-4 flex items-baseline justify-between font-mono text-xs hover:bg-crema/40 transition-colors">
-                  <span className="text-espresso font-semibold">10:30 — 11:45 UTC</span>
-                  <span className="text-mocha">Structural Timber Critique</span>
-                  <span className="text-mocha">STANDBY</span>
+                <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-baseline justify-between gap-1.5 sm:gap-2 font-mono text-xs hover:bg-crema/40 transition-colors">
+                  <span className="text-espresso font-semibold shrink-0">10:30 — 11:45 UTC</span>
+                  <span className="text-mocha truncate">Structural Timber Critique</span>
+                  <span className="text-mocha shrink-0">STANDBY</span>
                 </div>
-                <div className="p-4 flex items-baseline justify-between font-mono text-xs hover:bg-crema/40 transition-colors">
-                  <span className="text-espresso font-semibold">13:00 — 14:30 UTC</span>
-                  <span className="text-mocha">Acoustic Engineering Lab</span>
-                  <span className="text-mocha">SCHEDULED</span>
+                <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-baseline justify-between gap-1.5 sm:gap-2 font-mono text-xs hover:bg-crema/40 transition-colors">
+                  <span className="text-espresso font-semibold shrink-0">13:00 — 14:30 UTC</span>
+                  <span className="text-mocha truncate">Acoustic Engineering Lab</span>
+                  <span className="text-mocha shrink-0">SCHEDULED</span>
                 </div>
               </div>
             </div>
 
             {/* Stylized Floorplan Map SVG */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="micro-label text-mocha tracking-micro">
-                  LECTURE HALL 402 // SENSOR ANGLE &amp; ACOUSTIC CONE
+              <div className="flex items-center justify-between gap-2">
+                <span className="micro-label text-mocha tracking-micro text-[10px] sm:text-[11px] truncate">
+                  LECTURE HALL 402 // SENSOR ANGLE &amp; CONE
                 </span>
-                <span className="font-mono text-xs text-caramel">
+                <span className="font-mono text-xs text-caramel shrink-0">
                   SENSOR ALPHA-01
                 </span>
               </div>
-              <div className="border border-mocha/40 p-4 bg-espresso shadow-lg">
+              <div className="border border-mocha/40 p-3 sm:p-4 bg-espresso shadow-lg overflow-hidden">
                 <CampusMapSVG />
               </div>
             </div>
@@ -130,24 +130,24 @@ export default function InlineConfigAndLogs() {
           </div>
 
           {/* Right 6 Columns: 100% Inline Calibration Form */}
-          <div className="lg:col-span-6 border border-mocha/30 p-8 md:p-10 bg-crema/35 relative shadow-sm">
+          <div className="lg:col-span-6 border border-mocha/30 p-5 sm:p-8 md:p-10 bg-crema/35 relative shadow-sm min-w-0 overflow-hidden">
             
-            <span className="micro-label text-caramel block mb-2 tracking-micro">
+            <span className="micro-label text-caramel block mb-2 tracking-micro text-[10px] sm:text-[11px]">
               REAL-TIME SENSOR RIG TUNING
             </span>
-            <h3 className="font-display text-2xl md:text-3xl text-espresso mb-4 font-medium">
+            <h3 className="font-display text-2xl md:text-3xl text-espresso mb-3 sm:mb-4 font-medium">
               Calibrate Presence Thresholds
             </h3>
 
-            <p className="font-sans text-sm text-roast leading-relaxed mb-8">
+            <p className="font-sans text-xs sm:text-sm text-roast leading-relaxed mb-6 sm:mb-8">
               Adjust sensory sensitivity without halting active tracking. Changing the sustained duration 
               recalibrates the temporal filter instantly for both active hardware and simulation streams.
             </p>
 
-            <form onSubmit={handleCommitCalibration} className="space-y-6">
+            <form onSubmit={handleCommitCalibration} className="space-y-5 sm:space-y-6">
               
               {/* Session Title */}
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 <label className="font-mono text-xs text-mocha uppercase block tracking-wider">
                   Session Descriptor
                 </label>
@@ -155,16 +155,16 @@ export default function InlineConfigAndLogs() {
                   type="text"
                   value={sessionTitle}
                   onChange={(e) => setSessionTitle(e.target.value)}
-                  className="w-full px-4 py-3 bg-foam border border-mocha/40 text-espresso font-sans text-sm focus:outline-none focus:border-caramel transition-colors"
+                  className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-foam border border-mocha/40 text-espresso font-sans text-sm focus:outline-none focus:border-caramel transition-colors"
                   required
                 />
               </div>
 
               {/* Sustained Presence Slider */}
-              <div className="space-y-2">
-                <div className="flex justify-between font-mono text-xs text-mocha">
-                  <span className="tracking-wider">SUSTAINED PRESENCE THRESHOLD</span>
-                  <span className="text-caramel font-semibold">{threshold.toFixed(1)} SECONDS</span>
+              <div className="space-y-1.5 sm:space-y-2">
+                <div className="flex justify-between font-mono text-xs text-mocha gap-2">
+                  <span className="tracking-wider truncate">SUSTAINED PRESENCE THRESHOLD</span>
+                  <span className="text-caramel font-semibold shrink-0">{threshold.toFixed(1)} SECONDS</span>
                 </div>
                 <input
                   type="range"
@@ -175,16 +175,16 @@ export default function InlineConfigAndLogs() {
                   onChange={(e) => setThreshold(parseFloat(e.target.value))}
                   className="w-full accent-caramel cursor-pointer"
                 />
-                <span className="font-mono text-[10px] text-mocha block">
+                <span className="font-mono text-[9px] sm:text-[10px] text-mocha block leading-normal">
                   Participants must maintain uninterrupted track stability before gaining Verified Present status.
                 </span>
               </div>
 
               {/* Audio VAD Sensitivity */}
-              <div className="space-y-2">
-                <div className="flex justify-between font-mono text-xs text-mocha">
-                  <span className="tracking-wider">ACOUSTIC VAD FLOOR</span>
-                  <span className="text-caramel font-semibold">{vadSensitivity.toFixed(1)} dB</span>
+              <div className="space-y-1.5 sm:space-y-2">
+                <div className="flex justify-between font-mono text-xs text-mocha gap-2">
+                  <span className="tracking-wider truncate">ACOUSTIC VAD FLOOR</span>
+                  <span className="text-caramel font-semibold shrink-0">{vadSensitivity.toFixed(1)} dB</span>
                 </div>
                 <input
                   type="range"
@@ -198,14 +198,14 @@ export default function InlineConfigAndLogs() {
               </div>
 
               {/* AI Agent Cadence */}
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 <label className="font-mono text-xs text-mocha uppercase block tracking-wider">
                   Pedagogical Review Frequency
                 </label>
                 <select
                   value={aiCadence}
                   onChange={(e) => setAiCadence(e.target.value)}
-                  className="w-full px-4 py-3 bg-foam border border-mocha/40 text-espresso font-mono text-xs focus:outline-none focus:border-caramel transition-colors"
+                  className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-foam border border-mocha/40 text-espresso font-mono text-xs focus:outline-none focus:border-caramel transition-colors"
                 >
                   <option value="5 Seconds (High Velocity)">5 Seconds (High Velocity)</option>
                   <option value="10 Seconds (Responsive)">10 Seconds (Responsive — Standard)</option>
@@ -214,11 +214,11 @@ export default function InlineConfigAndLogs() {
               </div>
 
               {/* Commit Button */}
-              <div className="pt-4">
+              <div className="pt-2 sm:pt-4">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-4 border border-caramel bg-caramel text-espresso font-mono text-xs uppercase tracking-widest font-semibold hover:bg-espresso hover:text-foam hover:border-espresso transition-colors duration-200 cursor-pointer shadow-md"
+                  className="w-full py-3.5 sm:py-4 border border-caramel bg-caramel text-espresso font-mono text-xs uppercase tracking-widest font-semibold hover:bg-espresso hover:text-foam hover:border-espresso transition-colors duration-200 cursor-pointer shadow-md"
                 >
                   {commitMessage ? commitMessage : isSubmitting ? "Committing Calibration..." : "Commit Calibration to Rig"}
                 </button>
@@ -228,7 +228,7 @@ export default function InlineConfigAndLogs() {
 
             {/* Archival Calibration Marginalia Card tilted at 1.2deg */}
             <div
-              className="marginalia-note p-4 border border-mocha/30 bg-foam/80 mt-8 relative"
+              className="marginalia-note p-3.5 sm:p-4 border border-mocha/30 bg-foam/80 mt-6 sm:mt-8 relative max-w-full"
               style={{ transform: 'rotate(1.2deg)' }}
             >
               <div className="flex items-center space-x-2 mb-1">
@@ -244,7 +244,7 @@ export default function InlineConfigAndLogs() {
             </div>
 
             {/* Offline guarantee note */}
-            <div className="mt-6 pt-4 border-t border-mocha/20 flex items-center justify-between font-mono text-[11px] text-mocha">
+            <div className="mt-5 sm:mt-6 pt-3 sm:pt-4 border-t border-mocha/20 flex items-center justify-between font-mono text-[10px] sm:text-[11px] text-mocha">
               <span>ZERO NETWORK DEPENDENCY</span>
               <span className="text-caramel font-medium">SQLITE WAL SYNCED</span>
             </div>

@@ -73,21 +73,21 @@ export default function HeroSection({ onStartSession }) {
       {/* Top Editorial Index Meta */}
       <div className="max-w-7xl mx-auto w-full flex items-center justify-between border-b border-roast/60 pb-4 pt-4">
         <div className="flex items-center space-x-3">
-          <span className="micro-label text-mocha">
+          <span className="micro-label text-latte/75 font-medium">
             FOLIO N° 04 // 2026 EDITION
           </span>
-          <span className="hidden sm:inline text-mocha text-xs font-mono">•</span>
-          <span className="tactile-status-pill hidden sm:inline-flex">
+          <span className="hidden sm:inline text-latte/50 text-xs font-mono">•</span>
+          <span className="tactile-status-pill hidden sm:inline-flex border-roast/60 bg-roast/40">
             <span className="w-1.5 h-1.5 rounded-full bg-caramel animate-incandescent" />
-            <span className="text-latte">{heroClock}</span>
+            <span className="text-latte font-medium">{heroClock}</span>
           </span>
         </div>
 
-        <span className="micro-label text-latte hidden lg:inline tracking-micro">
+        <span className="micro-label text-latte/85 hidden lg:inline tracking-micro font-medium">
           LOCAL WEIGHTS • SUSTAINED COGNITION • ZERO BIOMETRIC STORAGE
         </span>
 
-        <span className="micro-label text-mocha">
+        <span className="micro-label text-latte/75 font-medium">
           SYS.VER 2.0.4 [STANDALONE]
         </span>
       </div>
@@ -99,7 +99,7 @@ export default function HeroSection({ onStartSession }) {
           {/* Typography Column */}
           <div className="lg:col-span-7 z-10 space-y-6">
             {/* Tactile Live Indicator Badge */}
-            <div className="inline-flex items-center space-x-2 px-3 py-1 border border-mocha/50 bg-roast/30 backdrop-blur-sm">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 border border-mocha/40 bg-roast/35 backdrop-blur-sm">
               <span className="w-2 h-2 rounded-full bg-caramel animate-incandescent" />
               <span className="font-mono text-[10px] uppercase tracking-micro text-caramel font-semibold">
                 MULTIMODAL ATELIER RIG // ONLINE
@@ -133,7 +133,7 @@ export default function HeroSection({ onStartSession }) {
               <button
                 ref={magneticButtonRef}
                 onClick={scrollToLive}
-                className="relative group overflow-hidden px-8 py-4 border border-caramel bg-transparent text-foam font-mono text-xs uppercase tracking-widest transition-colors duration-300 cursor-pointer shadow-lg"
+                className="relative group overflow-hidden px-8 py-4 border border-caramel bg-transparent text-foam font-mono text-xs uppercase tracking-widest transition-colors duration-300 cursor-pointer shadow-lg font-medium"
               >
                 {/* Bottom-up caramel fill wipe */}
                 <span className="absolute inset-0 bg-caramel translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-0" />
@@ -145,7 +145,7 @@ export default function HeroSection({ onStartSession }) {
 
               <button
                 onClick={scrollToPour}
-                className="micro-label text-latte hover:text-foam border-b border-mocha hover:border-foam pb-1 transition-colors bg-transparent cursor-pointer"
+                className="micro-label text-latte hover:text-foam border-b border-mocha/60 hover:border-foam pb-1 transition-colors bg-transparent cursor-pointer font-medium"
               >
                 02 / Explore The Pour Pipeline
               </button>
@@ -154,12 +154,12 @@ export default function HeroSection({ onStartSession }) {
             {/* Subtle Marginalia Note tilted at -1.5deg */}
             <div
               ref={marginaliaRef}
-              className="marginalia-note p-4 border border-mocha/40 bg-roast/25 max-w-lg mt-6 relative"
+              className="marginalia-note p-4 border border-mocha/35 bg-roast/30 max-w-lg mt-6 relative shadow-md"
               style={{ transform: 'rotate(-1.5deg)' }}
             >
               <div className="flex items-center space-x-2 mb-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-caramel" />
-                <span className="font-mono text-[9px] uppercase tracking-wider text-caramel">
+                <span className="font-mono text-[9px] uppercase tracking-wider text-caramel font-semibold">
                   FIELD NOTE § 01 // ROOM 402 OBSERVATION
                 </span>
               </div>
@@ -179,17 +179,17 @@ export default function HeroSection({ onStartSession }) {
       </div>
 
       {/* Bottom Scroll Indicator */}
-      <div className="max-w-7xl mx-auto w-full flex items-center justify-between pt-6 border-t border-roast/40">
+      <div className="max-w-7xl mx-auto w-full flex items-center justify-between pt-6 border-t border-roast/50">
         <div className="flex items-center space-x-2">
           <span className="w-1.5 h-1.5 rounded-full bg-caramel animate-incandescent" />
-          <span className="micro-label text-mocha">
+          <span className="micro-label text-latte/75 font-medium">
             DESK TELEMETRY // CALIBRATED
           </span>
         </div>
 
         {/* Tiny animated SVG coffee bean bobbing inside fine capsule */}
         <div className="flex flex-col items-center space-y-1.5">
-          <span className="micro-label text-mocha text-[9px]">SCROLL TO READ</span>
+          <span className="micro-label text-latte/80 text-[9px] font-medium">SCROLL TO READ</span>
           <div className="w-5 h-9 rounded-full border border-mocha/60 flex items-start justify-center pt-1.5">
             <svg
               className="w-2.5 h-2.5 text-caramel animate-bounce"
@@ -201,7 +201,7 @@ export default function HeroSection({ onStartSession }) {
           </div>
         </div>
 
-        <span className="micro-label text-mocha">
+        <span className="micro-label text-latte/75 font-medium">
           AUDIO VAD // 16KHZ PCM
         </span>
       </div>

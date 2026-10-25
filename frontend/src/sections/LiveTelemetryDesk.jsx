@@ -89,7 +89,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
           {hoveredRowGlyph === 'wave' && <AcousticWaveGlyph className="w-4 h-4" stroke="#D2AE82" />}
           {hoveredRowGlyph === 'croissant' && <RestingCroissantGlyph className="w-4 h-4" stroke="#B8772F" />}
           {hoveredRowGlyph === 'seal' && <PresenceSealGlyph className="w-4 h-4" stroke="#EBDCC2" />}
-          <span className="font-mono text-[9px] uppercase tracking-wider text-latte pr-1">
+          <span className="font-mono text-[9px] uppercase tracking-wider text-latte pr-1 font-semibold">
             {hoveredRowGlyph === 'seal' ? 'VERIFIED' : 'OBSERVING'}
           </span>
         </div>
@@ -97,14 +97,14 @@ export default function LiveTelemetryDesk({ telemetry }) {
 
       <div className="max-w-7xl mx-auto w-full space-y-10">
         {/* Section Top Header Rule with Tactile Status Pills */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-roast pb-6 gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-roast/70 pb-6 gap-4">
           <div>
             <div className="flex items-center space-x-3 mb-1.5">
-              <span className="micro-label text-mocha">
+              <span className="micro-label text-latte/75 font-medium">
                 03 / ANALOG DARKROOM &amp; ROASTERY MENU
               </span>
-              <span className="text-mocha text-xs font-mono">•</span>
-              <span className="font-mono text-[10px] text-latte tracking-wider">
+              <span className="text-latte/50 text-xs font-mono">•</span>
+              <span className="font-mono text-[10px] text-latte tracking-wider font-semibold">
                 UTC {sessionClock}
               </span>
             </div>
@@ -115,10 +115,10 @@ export default function LiveTelemetryDesk({ telemetry }) {
 
           {/* Tactile Hardware Indicator Pills */}
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="tactile-status-pill">
+            <div className="tactile-status-pill border-roast/70 bg-roast/40">
               <span
                 className={`w-2 h-2 rounded-full ${
-                  isStreaming ? 'bg-caramel animate-incandescent' : 'bg-mocha'
+                  isStreaming ? 'bg-caramel animate-incandescent' : 'bg-mocha/70'
                 }`}
               />
               <span className="text-latte font-medium">
@@ -130,31 +130,31 @@ export default function LiveTelemetryDesk({ telemetry }) {
               </span>
             </div>
 
-            <div className="tactile-status-pill hidden sm:inline-flex">
+            <div className="tactile-status-pill hidden sm:inline-flex border-roast/70 bg-roast/40">
               <span className="w-1.5 h-1.5 rounded-full bg-latte animate-tape-blink" />
-              <span className="text-mocha">OPENCV 4.9 // HAAR 1.1x</span>
+              <span className="text-latte/70 font-medium">OPENCV 4.9 // HAAR 1.1x</span>
             </div>
 
-            <div className="tactile-status-pill hidden md:inline-flex">
-              <span className="text-mocha">AUDIO VAD:</span>
+            <div className="tactile-status-pill hidden md:inline-flex border-roast/70 bg-roast/40">
+              <span className="text-latte/70">AUDIO VAD:</span>
               <span className="text-caramel font-semibold">16.0 kHz PCM</span>
             </div>
 
-            <div className="tactile-status-pill">
-              <span className="text-mocha">SQLITE:</span>
-              <span className="text-latte">WAL LOCKED</span>
+            <div className="tactile-status-pill border-roast/70 bg-roast/40">
+              <span className="text-latte/70">SQLITE:</span>
+              <span className="text-latte font-medium">WAL LOCKED</span>
             </div>
           </div>
         </div>
 
         {/* Category Tabs (Editorial Menu Style) */}
-        <div className="flex flex-wrap items-center space-x-2 md:space-x-8 border-b border-roast pb-2">
+        <div className="flex flex-wrap items-center space-x-2 md:space-x-8 border-b border-roast/70 pb-2">
           <button
             onClick={() => setActiveTab('optical-feed')}
             className={`font-mono text-xs md:text-sm uppercase tracking-wider py-2 bg-transparent border-b-2 transition-all cursor-pointer ${
               activeTab === 'optical-feed'
                 ? 'border-caramel text-caramel font-semibold'
-                : 'border-transparent text-mocha hover:text-latte'
+                : 'border-transparent text-latte/65 hover:text-foam font-normal'
             }`}
           >
             [A] Optical &amp; Acoustic Stream
@@ -165,7 +165,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
             className={`font-mono text-xs md:text-sm uppercase tracking-wider py-2 bg-transparent border-b-2 transition-all cursor-pointer ${
               activeTab === 'attendance-ledger'
                 ? 'border-caramel text-caramel font-semibold'
-                : 'border-transparent text-mocha hover:text-latte'
+                : 'border-transparent text-latte/65 hover:text-foam font-normal'
             }`}
           >
             [B] Attendance Ledger ({participants.length})
@@ -176,7 +176,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
             className={`font-mono text-xs md:text-sm uppercase tracking-wider py-2 bg-transparent border-b-2 transition-all cursor-pointer ${
               activeTab === 'pedagogy-agent'
                 ? 'border-caramel text-caramel font-semibold'
-                : 'border-transparent text-mocha hover:text-latte'
+                : 'border-transparent text-latte/65 hover:text-foam font-normal'
             }`}
           >
             [C] Pedagogical Agent Notes
@@ -190,7 +190,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
               {/* Left 7 Columns: Darkroom Viewfinder & Contact Sheet Styling */}
               <div className="lg:col-span-7 space-y-4">
                 {/* Contact Sheet Frame Header Strip */}
-                <div className="flex items-center justify-between font-mono text-[10px] text-mocha px-1">
+                <div className="flex items-center justify-between font-mono text-[10px] text-latte/70 px-1 font-medium">
                   <span>FRAME: 024 // KODAK PORTRA 400</span>
                   <span className="text-latte hidden sm:inline">
                     EXPOSURE: 1/125s • f/2.8 • ISO 400
@@ -199,7 +199,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
                 </div>
 
                 {/* Main Viewfinder Canvas with 1.5px Caramel/Mocha Corner Brackets */}
-                <div className="relative aspect-[4/3] bg-roast/70 border border-mocha/70 overflow-hidden flex items-center justify-center shadow-2xl">
+                <div className="relative aspect-[4/3] bg-roast/70 border border-mocha/50 overflow-hidden flex items-center justify-center shadow-2xl">
                   {/* Real-time frame display */}
                   {annotatedFrame ? (
                     <img
@@ -209,17 +209,17 @@ export default function LiveTelemetryDesk({ telemetry }) {
                     />
                   ) : (
                     <div className="text-center p-8 space-y-4">
-                      <div className="w-16 h-16 rounded-full border border-mocha/80 mx-auto flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-full border border-mocha/70 mx-auto flex items-center justify-center">
                         <GazeEyeGlyph className="w-8 h-8" stroke="#B8772F" />
                       </div>
-                      <p className="font-display italic text-lg text-crema/80 max-w-sm">
+                      <p className="font-display italic text-lg text-crema/85 max-w-sm">
                         Optical aperture awaiting engagement. Initialize your local camera or launch
                         the synthetic classroom study simulation.
                       </p>
                     </div>
                   )}
 
-                  {/* Corner Crop Marks (1.5px Caramel & Mocha Brackets) */}
+                  {/* Corner Crop Marks (1.5px Caramel Brackets) */}
                   <div className="absolute top-3 left-3 w-4 h-4 border-t-[1.5px] border-l-[1.5px] border-caramel pointer-events-none" />
                   <div className="absolute top-3 right-3 w-4 h-4 border-t-[1.5px] border-r-[1.5px] border-caramel pointer-events-none" />
                   <div className="absolute bottom-3 left-3 w-4 h-4 border-b-[1.5px] border-l-[1.5px] border-caramel pointer-events-none" />
@@ -233,18 +233,18 @@ export default function LiveTelemetryDesk({ telemetry }) {
 
                   {/* Overlaid Darkroom Telemetry Badges */}
                   <div className="absolute top-3 left-10 flex items-center space-x-2">
-                    <span className="font-mono text-[9px] text-latte bg-espresso/90 px-2.5 py-0.5 border border-mocha backdrop-blur-sm">
+                    <span className="font-mono text-[9px] text-latte bg-espresso/90 px-2.5 py-0.5 border border-mocha/50 backdrop-blur-sm font-medium">
                       {isSimulating ? 'SYNTHETIC CLASSROOM SIMULATION' : 'OPENCV 4.9 // HAAR FRONTAL'}
                     </span>
-                    <span className="font-mono text-[9px] text-caramel bg-espresso/90 px-2 py-0.5 border border-mocha">
+                    <span className="font-mono text-[9px] text-caramel bg-espresso/90 px-2 py-0.5 border border-mocha/50 font-semibold">
                       {isStreaming ? 'REC ●' : 'IDLE ○'}
                     </span>
                   </div>
 
                   {/* Bottom Viewfinder Meta Strip */}
-                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between font-mono text-[9px] text-crema/80 bg-espresso/80 px-3 py-1 border border-roast backdrop-blur-sm pointer-events-none">
+                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between font-mono text-[9px] text-crema/90 bg-espresso/85 px-3 py-1 border border-roast/70 backdrop-blur-sm pointer-events-none">
                     <span>TRACKS: {metrics.active_count.toString().padStart(2, '0')} IN FRAME</span>
-                    <span className="text-latte">
+                    <span className="text-latte font-medium">
                       ATTENTION: {metrics.visual_attention.toFixed(1)}%
                     </span>
                     <span>WAL LOG: ACTIVE</span>
@@ -257,14 +257,14 @@ export default function LiveTelemetryDesk({ telemetry }) {
                     <>
                       <button
                         onClick={startHardwareStream}
-                        className="px-6 py-3 border border-caramel bg-caramel text-espresso font-mono text-xs uppercase tracking-widest font-semibold hover:bg-foam hover:border-foam transition-colors cursor-pointer"
+                        className="px-6 py-3 border border-caramel bg-caramel text-espresso font-mono text-xs uppercase tracking-widest font-semibold hover:bg-foam hover:border-foam transition-colors cursor-pointer shadow-md"
                       >
                         Initialize Local Camera &amp; Mic
                       </button>
 
                       <button
                         onClick={startSimulationStream}
-                        className="px-6 py-3 border border-mocha bg-espresso text-latte font-mono text-xs uppercase tracking-widest hover:border-caramel hover:text-caramel transition-colors cursor-pointer"
+                        className="px-6 py-3 border border-mocha/60 bg-espresso text-latte font-mono text-xs uppercase tracking-widest hover:border-caramel hover:text-caramel transition-colors cursor-pointer font-medium"
                       >
                         Simulate Classroom Feed (No Camera Required)
                       </button>
@@ -273,14 +273,14 @@ export default function LiveTelemetryDesk({ telemetry }) {
                     <>
                       <button
                         onClick={stopStream}
-                        className="px-6 py-3 border border-mocha bg-roast text-foam font-mono text-xs uppercase tracking-widest hover:border-caramel hover:text-caramel transition-colors cursor-pointer"
+                        className="px-6 py-3 border border-mocha/60 bg-roast text-foam font-mono text-xs uppercase tracking-widest hover:border-caramel hover:text-caramel transition-colors cursor-pointer font-medium"
                       >
                         Terminate Telemetry Feed
                       </button>
 
                       <button
                         onClick={isSimulating ? startHardwareStream : startSimulationStream}
-                        className="px-6 py-3 border border-mocha/60 bg-espresso text-latte font-mono text-xs uppercase tracking-widest hover:border-latte transition-colors cursor-pointer"
+                        className="px-6 py-3 border border-mocha/60 bg-espresso text-latte font-mono text-xs uppercase tracking-widest hover:border-caramel hover:text-caramel transition-colors cursor-pointer font-medium"
                       >
                         Switch to {isSimulating ? 'Local Hardware Camera' : 'Simulation Mode'}
                       </button>
@@ -290,15 +290,15 @@ export default function LiveTelemetryDesk({ telemetry }) {
               </div>
 
               {/* Right 5 Columns: Atelier Typographic Register + Analog Dial Gauges */}
-              <div className="lg:col-span-5 p-7 md:p-8 border border-roast bg-espresso/90 space-y-6">
+              <div className="lg:col-span-5 p-7 md:p-8 border border-roast/80 bg-espresso/90 space-y-6 shadow-xl">
                 <div className="flex items-center justify-between border-b border-roast/80 pb-3">
                   <div>
-                    <span className="micro-label text-mocha">TELEMETRY REGISTER</span>
+                    <span className="micro-label text-latte/75 font-medium">TELEMETRY REGISTER</span>
                     <h3 className="font-display text-2xl text-foam mt-0.5">
                       Atelier Telemetry Indices
                     </h3>
                   </div>
-                  <span className="font-mono text-xs text-caramel">N° 402</span>
+                  <span className="font-mono text-xs text-caramel font-semibold">N° 402</span>
                 </div>
 
                 {/* Pair of Vintage Galvanometer Dial Gauges */}
@@ -364,24 +364,24 @@ export default function LiveTelemetryDesk({ telemetry }) {
                   <div className="flex items-baseline justify-between group">
                     <span className="text-crema">Inactivity Penalty</span>
                     <span className="dotted-leader" />
-                    <span className="font-mono text-sm text-mocha">
+                    <span className="font-mono text-sm text-latte/80 font-medium">
                       -{metrics.inactivity_penalty ? metrics.inactivity_penalty.toFixed(1) : '0.0'}
                     </span>
                   </div>
 
-                  <div className="pt-3 border-t border-roast flex items-baseline justify-between group">
+                  <div className="pt-3 border-t border-roast/80 flex items-baseline justify-between group">
                     <span className="text-foam font-display text-base">Multimodal Fusion Score</span>
                     <span className="dotted-leader" />
                     <span className="font-mono text-lg text-caramel font-bold">
                       {metrics.fused_score.toFixed(1)}{' '}
-                      <span className="text-xs text-mocha font-normal">/ 100</span>
+                      <span className="text-xs text-latte/70 font-normal">/ 100</span>
                     </span>
                   </div>
 
                   <div className="flex items-baseline justify-between text-xs font-mono group">
-                    <span className="text-mocha uppercase">Session Trajectory</span>
+                    <span className="text-latte/70 uppercase">Session Trajectory</span>
                     <span className="dotted-leader" />
-                    <span className="text-caramel uppercase tracking-wider">
+                    <span className="text-caramel uppercase tracking-wider font-semibold">
                       {metrics.trend || 'Steady Plateau'}
                     </span>
                   </div>
@@ -404,19 +404,19 @@ export default function LiveTelemetryDesk({ telemetry }) {
         {/* TAB 2: Attendance Ledger (Menu Style) */}
         {activeTab === 'attendance-ledger' && (
           <div id="attendance-ledger" className="space-y-8">
-            <div className="border border-roast p-8 bg-espresso/80 space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-roast pb-4 gap-2">
+            <div className="border border-roast/80 p-8 bg-espresso/80 space-y-6 shadow-xl">
+              <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-roast/70 pb-4 gap-2">
                 <div>
-                  <span className="micro-label text-mocha">STUDIO PARTICIPATION REGISTRY</span>
+                  <span className="micro-label text-latte/75 font-medium">STUDIO PARTICIPATION REGISTRY</span>
                   <h3 className="font-display text-2xl md:text-3xl text-foam mt-1 font-normal">
                     Morning Atelier Attendance Roster
                   </h3>
                 </div>
                 <div className="flex items-center space-x-4 font-mono text-xs">
-                  <span className="text-latte border border-mocha/50 px-3 py-1 bg-roast/30">
+                  <span className="text-latte border border-mocha/50 px-3 py-1 bg-roast/35 font-medium">
                     THRESHOLD: 10.0s TEMPORAL FOOTPRINT
                   </span>
-                  <span className="text-caramel hidden sm:inline">WAL SYNCED</span>
+                  <span className="text-caramel hidden sm:inline font-semibold">WAL SYNCED</span>
                 </div>
               </div>
 
@@ -432,17 +432,17 @@ export default function LiveTelemetryDesk({ telemetry }) {
                       key={p.track_id || idx}
                       onMouseEnter={() => setHoveredRowGlyph(glyphType)}
                       onMouseLeave={() => setHoveredRowGlyph(null)}
-                      className="py-5 px-3 flex flex-col sm:flex-row sm:items-baseline justify-between hover:bg-roast/30 border-l-2 border-transparent hover:border-caramel transition-all duration-200 group cursor-default"
+                      className="py-5 px-3 flex flex-col sm:flex-row sm:items-baseline justify-between hover:bg-roast/35 border-l-2 border-transparent hover:border-caramel transition-all duration-200 group cursor-default"
                     >
                       {/* Left: Index + Fraunces Serif Track ID + Gaze Score */}
                       <div className="flex items-center space-x-4">
-                        <span className="font-mono text-xs text-mocha w-8">
+                        <span className="font-mono text-xs text-latte/70 w-8 font-medium">
                           {String(idx + 1).padStart(2, '0')}.
                         </span>
                         <span className="font-display text-lg md:text-xl text-foam group-hover:text-caramel transition-colors">
                           {p.track_id}
                         </span>
-                        <span className="hidden md:inline font-mono text-[11px] text-mocha">
+                        <span className="hidden md:inline font-mono text-[11px] text-latte/70 font-medium">
                           [Gaze: {p.head_pose_score || 88}% • {arrivalStamp}]
                         </span>
                       </div>
@@ -452,19 +452,19 @@ export default function LiveTelemetryDesk({ telemetry }) {
 
                       {/* Right: Sustained Duration + Tactile Status Pill */}
                       <div className="flex items-center space-x-6 mt-3 sm:mt-0 font-mono text-xs">
-                        <span className="text-latte group-hover:text-foam transition-colors">
+                        <span className="text-latte group-hover:text-foam transition-colors font-medium">
                           {formatSeconds(p.sustained_seconds)}
                         </span>
                         <span
                           className={`tactile-status-pill ${
                             isVerified
-                              ? 'border-caramel text-caramel bg-caramel/10'
-                              : 'border-mocha text-mocha'
+                              ? 'border-caramel text-caramel bg-caramel/15 font-semibold'
+                              : 'border-mocha/50 text-latte/75 bg-roast/30'
                           }`}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
-                              isVerified ? 'bg-caramel animate-incandescent' : 'bg-mocha'
+                              isVerified ? 'bg-caramel animate-incandescent' : 'bg-mocha/70'
                             }`}
                           />
                           <span>{p.status}</span>
@@ -477,12 +477,12 @@ export default function LiveTelemetryDesk({ telemetry }) {
 
               {/* Tilted Archival Marginalia Field Note attached to Ledger */}
               <div
-                className="marginalia-note p-6 border border-mocha/40 bg-roast/30 max-w-2xl mt-8"
+                className="marginalia-note p-6 border border-mocha/40 bg-roast/30 max-w-2xl mt-8 shadow-md"
                 style={{ transform: 'rotate(-1.2deg)' }}
               >
                 <div className="flex items-center space-x-2 mb-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-caramel" />
-                  <span className="font-mono text-[10px] text-caramel uppercase tracking-widest">
+                  <span className="font-mono text-[10px] text-caramel uppercase tracking-widest font-semibold">
                     ARCHIVAL FIELD NOTE § 03 // ETHICAL INTEGRITY
                   </span>
                 </div>
@@ -491,15 +491,15 @@ export default function LiveTelemetryDesk({ telemetry }) {
                   Once sustained tracking validates continuous presence past the 10.0-second threshold, 
                   only the verified interval timestamp is written to the SQLite journal."
                 </p>
-                <div className="mt-3 flex items-center justify-between font-mono text-[9px] text-mocha">
-                  <span>ATELIER VERIFICATION PROTOCOL</span>
-                  <span className="text-latte">ZERO FACIAL RECOGNITION STORAGE</span>
+                <div className="mt-3 flex items-center justify-between font-mono text-[9px] text-latte/70">
+                  <span className="font-medium">ATELIER VERIFICATION PROTOCOL</span>
+                  <span className="text-latte font-medium">ZERO FACIAL RECOGNITION STORAGE</span>
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-roast flex items-center justify-between text-xs font-mono text-mocha">
+              <div className="mt-6 pt-4 border-t border-roast/70 flex items-center justify-between text-xs font-mono text-latte/70">
                 <span>LOCAL SQLITE PERSISTENCE ACTIVE</span>
-                <span>ATTENDANCE LOG WAL LOCKED</span>
+                <span className="text-caramel font-semibold">ATTENDANCE LOG WAL LOCKED</span>
               </div>
             </div>
           </div>
@@ -515,11 +515,11 @@ export default function LiveTelemetryDesk({ telemetry }) {
                 style={{ transform: 'rotate(-1.2deg)' }}
               >
                 {/* Vintage archival stamp in corner */}
-                <span className="absolute top-4 right-6 font-mono text-[10px] text-caramel uppercase tracking-widest border border-caramel/60 px-2.5 py-0.5">
+                <span className="absolute top-4 right-6 font-mono text-[10px] text-caramel uppercase tracking-widest border border-caramel/60 px-2.5 py-0.5 font-semibold">
                   PEDAGOGICAL ADVISOR
                 </span>
 
-                <span className="micro-label text-mocha block mb-3">
+                <span className="micro-label text-latte/75 font-medium block mb-3">
                   INLINE FIELD MARGINALIA // RECENT OBSERVATION
                 </span>
 
@@ -529,15 +529,15 @@ export default function LiveTelemetryDesk({ telemetry }) {
 
                 <div className="pt-6 border-t border-mocha/40 flex flex-wrap items-center justify-between gap-4">
                   <div>
-                    <span className="micro-label text-mocha block">RECOMMENDED PACING ACTION</span>
+                    <span className="micro-label text-latte/70 font-medium block">RECOMMENDED PACING ACTION</span>
                     <span className="font-mono text-sm text-caramel font-semibold">
                       {aiSuggestion.pacing_action}
                     </span>
                   </div>
 
                   <div>
-                    <span className="micro-label text-mocha block">INTELLIGENCE SOURCE</span>
-                    <span className="font-mono text-xs text-latte">
+                    <span className="micro-label text-latte/70 font-medium block">INTELLIGENCE SOURCE</span>
+                    <span className="font-mono text-xs text-latte font-medium">
                       {aiSuggestion.provider || 'Offline Heuristic Engine (Local)'}
                     </span>
                   </div>
@@ -546,15 +546,15 @@ export default function LiveTelemetryDesk({ telemetry }) {
             </div>
 
             {/* Right 5 Columns: Engagement Trend Sparkline & Context */}
-            <div className="lg:col-span-5 p-8 border border-roast bg-espresso space-y-6">
+            <div className="lg:col-span-5 p-8 border border-roast/80 bg-espresso space-y-6 shadow-xl">
               <div>
-                <span className="micro-label text-mocha">CONTEXTUAL FUSION</span>
+                <span className="micro-label text-latte/75 font-medium">CONTEXTUAL FUSION</span>
                 <h3 className="font-display text-xl text-foam mt-1">
                   Cognitive Equilibrium Analysis
                 </h3>
               </div>
 
-              <p className="font-sans text-sm text-crema/80 leading-relaxed">
+              <p className="font-sans text-sm text-crema/85 leading-relaxed">
                 The pedagogical agent does not enforce disciplinary measures. It operates like an
                 experienced studio colleague whispering from the back row: observing when
                 prolonged note-taking turns into cognitive fatigue, and suggesting paired peer
@@ -562,7 +562,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
               </p>
 
               {/* Fused History Polyline Sparkline */}
-              <div className="pt-4 border-t border-roast">
+              <div className="pt-4 border-t border-roast/80">
                 <StudioSparkline
                   data={metrics.fused_history || [75, 78, 82, 80, 84, 82]}
                   currentScore={metrics.fused_score}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -22,6 +22,8 @@ gsap.registerPlugin(ScrollTrigger);
 export default function App() {
   const telemetry = useTelemetrySocket();
   const lenisRef = useRef(null);
+  const [navTheme, setNavTheme] = useState('dark');
+  const [activeSection, setActiveSection] = useState('hero');
 
   useEffect(() => {
     // 1. Initialize Lenis Smooth Scroll
@@ -45,7 +47,45 @@ export default function App() {
     gsap.ticker.add(tickerCallback);
     gsap.ticker.lagSmoothing(0);
 
-    // 3. Scroll-Driven Background Color Shift orchestrations
+    // 3. Dynamic Navbar Theming via ScrollTrigger tracking [data-theme="light"]
+    // Uses 64px offset (exact height of the fixed navbar)
+    const lightSections = document.querySelectorAll('[data-theme="light"]');
+    lightSections.forEach((section) => {
+      ScrollTrigger.create({
+        trigger: section,
+        start: 'top 64px',
+        end: 'bottom 64px',
+        onEnter: () => setNavTheme('light'),
+        onLeave: () => setNavTheme('dark'),
+        onEnterBack: () => setNavTheme('light'),
+        onLeaveBack: () => setNavTheme('dark'),
+      });
+    });
+
+    // 4. Section active tracking for editorial index links
+    const trackedSections = [
+      { id: 'hero' },
+      { id: 'philosophy' },
+      { id: 'the-pour' },
+      { id: 'live-desk' },
+      { id: 'gallery' },
+      { id: 'calibration' },
+    ];
+
+    trackedSections.forEach(({ id }) => {
+      const el = document.getElementById(id);
+      if (el) {
+        ScrollTrigger.create({
+          trigger: el,
+          start: 'top 45%',
+          end: 'bottom 45%',
+          onEnter: () => setActiveSection(id),
+          onEnterBack: () => setActiveSection(id),
+        });
+      }
+    });
+
+    // 5. Scroll-Driven Background Color Shift orchestrations
     const philosophyEl = document.getElementById('philosophy');
     const liveDeskEl = document.getElementById('live-desk');
     const calibrationEl = document.getElementById('calibration');
@@ -116,8 +156,8 @@ export default function App() {
       {/* Editorial Caramel Dot & Lagging Ring Cursor */}
       <CustomCursor />
 
-      {/* Hide-on-scroll-down Top Nav */}
-      <Navbar />
+      {/* Dynamic Theme Synchronized Navbar */}
+      <Navbar navTheme={navTheme} activeSection={activeSection} />
 
       {/* Main Content Flow */}
       <main className="relative w-full">

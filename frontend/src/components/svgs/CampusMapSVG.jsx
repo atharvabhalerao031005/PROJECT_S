@@ -23,7 +23,7 @@ export default function CampusMapSVG({ className = "w-full h-auto" }) {
       <path d="M 30 180 L 10 180 L 10 240 L 30 240" stroke="#6B4630" strokeWidth="2" fill="none" />
       <path d="M 30 190 A 25 25 0 0 1 55 215" stroke="#D2AE82" strokeWidth="1.2" strokeDasharray="3 3" fill="none" />
       <line x1="30" y1="190" x2="30" y2="215" stroke="#B8772F" strokeWidth="2" />
-      <text x="18" y="258" fill="#6B4630" fontFamily="JetBrains Mono" fontSize="8" letterSpacing="0.1em">
+      <text x="18" y="258" fill="#D2AE82" fontFamily="JetBrains Mono" fontSize="8" letterSpacing="0.1em">
         ENTRY
       </text>
 
@@ -99,15 +99,17 @@ export default function CampusMapSVG({ className = "w-full h-auto" }) {
         <circle cx="0" cy="0" r="28" fill="url(#sensorPulse)" className="animate-ping opacity-75" />
         <circle cx="0" cy="0" r="14" stroke="#B8772F" strokeWidth="1.5" />
         <circle cx="0" cy="0" r="6" fill="#B8772F" />
-        <circle cx="0" cy="0" r="2.5" fill="#EBDCC2" />
+
+        <text x="0" y="32" textAnchor="middle" fill="#EBDCC2" fontFamily="JetBrains Mono" fontSize="8" letterSpacing="0.12em">
+          SENSOR 01
+        </text>
       </g>
 
-      {/* Telemetry Annotation Tag */}
-      <g transform="translate(290, 310)">
-        <rect x="0" y="0" width="165" height="20" fill="#1C1310" stroke="#6B4630" strokeWidth="1" />
-        <text x="8" y="13" fill="#D2AE82" fontFamily="JetBrains Mono" fontSize="8" letterSpacing="0.1em">
-          SENSOR RIG // ALPHA 01 (ACTIVE)
-        </text>
+      {/* Grid Coordinates Overlay */}
+      <g fill="#6B4630" fontFamily="JetBrains Mono" fontSize="7" opacity="0.6">
+        <text x="36" y="22">Y: 00</text>
+        <text x="440" y="22">X: 100</text>
+        <text x="440" y="342">ROOM 402</text>
       </g>
     </svg>
   );

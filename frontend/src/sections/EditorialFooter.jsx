@@ -25,72 +25,72 @@ export default function EditorialFooter() {
   return (
     <footer
       ref={containerRef}
-      className="relative pt-24 pb-0 px-6 lg:px-12 bg-espresso text-foam overflow-hidden border-t border-roast select-none"
+      className="relative pt-24 pb-0 px-6 lg:px-12 bg-espresso text-foam overflow-hidden border-t border-roast/80 select-none"
       style={{ backgroundColor: 'var(--espresso)', color: 'var(--foam)' }}
     >
       <div className="max-w-7xl mx-auto w-full">
         
         {/* Colophon Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pb-16 border-b border-roast/60">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pb-16 border-b border-roast/70">
           
           <div className="md:col-span-4 space-y-4">
             <div className="flex items-center space-x-2">
               <span className="w-1.5 h-1.5 rounded-full bg-caramel animate-incandescent" />
-              <span className="micro-label text-mocha tracking-micro">THE STUDIO FOLIO</span>
+              <span className="micro-label text-latte/75 font-medium tracking-micro">THE STUDIO FOLIO</span>
             </div>
-            <p className="font-sans text-sm text-crema/85 max-w-sm leading-relaxed">
+            <p className="font-sans text-sm text-crema/85 max-w-sm leading-relaxed font-normal">
               Crafted as an analog study journal from an architectural studio. Multimodal telemetry 
               respecting human dignity, student attention, and offline computational sovereignty.
             </p>
-            <div className="tactile-status-pill">
+            <div className="tactile-status-pill border-roast/70 bg-roast/40">
               <span className="w-1.5 h-1.5 rounded-full bg-caramel animate-tape-blink" />
-              <span className="text-latte font-mono text-[9px]">AIR-GAPPED TELEMETRY ARCHITECTURE</span>
+              <span className="text-latte font-mono text-[9px] font-medium">AIR-GAPPED TELEMETRY ARCHITECTURE</span>
             </div>
           </div>
 
           <div className="md:col-span-3 space-y-2.5">
-            <span className="micro-label text-mocha block tracking-micro">CORE ALGORITHMS</span>
-            <ul className="font-mono text-xs text-latte space-y-1.5 list-none">
+            <span className="micro-label text-latte/75 font-medium block tracking-micro">CORE ALGORITHMS</span>
+            <ul className="font-mono text-xs text-latte/90 space-y-1.5 list-none font-normal">
               <li className="flex items-center space-x-2">
-                <span className="text-caramel">›</span>
+                <span className="text-caramel font-semibold">›</span>
                 <span>OpenCV Haar Frontal 1.1x</span>
               </li>
               <li className="flex items-center space-x-2">
-                <span className="text-caramel">›</span>
+                <span className="text-caramel font-semibold">›</span>
                 <span>IoU &amp; Centroid Persistence</span>
               </li>
               <li className="flex items-center space-x-2">
-                <span className="text-caramel">›</span>
+                <span className="text-caramel font-semibold">›</span>
                 <span>Librosa Spectral Centroids</span>
               </li>
               <li className="flex items-center space-x-2">
-                <span className="text-caramel">›</span>
+                <span className="text-caramel font-semibold">›</span>
                 <span>Groq &amp; Gemini 2.0 Flash</span>
               </li>
               <li className="flex items-center space-x-2">
-                <span className="text-caramel">›</span>
+                <span className="text-caramel font-semibold">›</span>
                 <span>Offline Heuristic Engine</span>
               </li>
             </ul>
           </div>
 
           <div className="md:col-span-3 space-y-2.5">
-            <span className="micro-label text-mocha block tracking-micro">LOCAL ARTIFACTS</span>
-            <ul className="font-mono text-xs text-latte space-y-1.5 list-none">
+            <span className="micro-label text-latte/75 font-medium block tracking-micro">LOCAL ARTIFACTS</span>
+            <ul className="font-mono text-xs text-latte/90 space-y-1.5 list-none font-normal">
               <li className="flex items-center space-x-2">
-                <span className="text-caramel">›</span>
+                <span className="text-caramel font-semibold">›</span>
                 <span>SQLite WAL Ledger</span>
               </li>
               <li className="flex items-center space-x-2">
-                <span className="text-caramel">›</span>
+                <span className="text-caramel font-semibold">›</span>
                 <span>CSV Attendance Export</span>
               </li>
               <li className="flex items-center space-x-2">
-                <span className="text-caramel">›</span>
+                <span className="text-caramel font-semibold">›</span>
                 <span>16 kHz PCM Audio Pipeline</span>
               </li>
               <li className="flex items-center space-x-2">
-                <span className="text-caramel">›</span>
+                <span className="text-caramel font-semibold">›</span>
                 <span>WebSocket Stream /ws/stream</span>
               </li>
             </ul>
@@ -98,13 +98,13 @@ export default function EditorialFooter() {
 
           <div className="md:col-span-2 space-y-3 text-right md:text-left">
             <div>
-              <span className="micro-label text-mocha block tracking-micro">EDITION</span>
+              <span className="micro-label text-latte/75 font-medium block tracking-micro">EDITION</span>
               <span className="font-mono text-xs text-caramel block font-semibold">SLOW MORNING 2026</span>
-              <span className="font-mono text-[10px] text-mocha block">AWWWARDS EDITORIAL SPEC</span>
+              <span className="font-mono text-[10px] text-latte/65 block font-medium">AWWWARDS EDITORIAL SPEC</span>
             </div>
 
             <div
-              className="marginalia-note p-3 border border-mocha/30 bg-roast/40 text-left mt-2"
+              className="marginalia-note p-3 border border-mocha/35 bg-roast/40 text-left mt-2 shadow-sm"
               style={{ transform: 'rotate(-1.2deg)' }}
             >
               <span className="font-display italic text-[11px] text-crema/90 block leading-snug">
@@ -150,7 +150,7 @@ export default function EditorialFooter() {
       {/* Giant Cropped Fraunces Wordmark at Very Bottom Edge */}
       <div className="w-full overflow-hidden text-center leading-none select-none">
         <h1
-          className="font-display font-bold tracking-tighter text-roast hover:text-mocha transition-colors duration-500 text-[14vw] md:text-[15.5vw] uppercase translate-y-[20%]"
+          className="font-display font-bold tracking-tighter text-roast/80 hover:text-caramel/40 transition-colors duration-500 text-[14vw] md:text-[15.5vw] uppercase translate-y-[20%]"
           style={{ letterSpacing: '-0.05em' }}
         >
           ATELIER // PRESENCE
