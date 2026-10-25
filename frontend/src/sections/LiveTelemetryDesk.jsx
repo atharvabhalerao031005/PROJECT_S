@@ -15,13 +15,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
   const [activeTab, setActiveTab] = useState('optical-feed'); // 'optical-feed' | 'attendance-ledger' | 'pedagogy-agent'
   const [hoveredRowGlyph, setHoveredRowGlyph] = useState(null);
   const [sessionClock, setSessionClock] = useState('09:41:22.40');
-  const [showGuide, setShowGuide] = useState(() => {
-    try {
-      return localStorage.getItem('atelier_field_guide_seen') !== 'true';
-    } catch {
-      return true;
-    }
-  });
+  const [showGuide, setShowGuide] = useState(false);
   const glyphRef = useRef(null);
 
   const {

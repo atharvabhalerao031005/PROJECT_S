@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CampusMapSVG from '../components/svgs/CampusMapSVG';
+import AtelierSelect from '../components/AtelierSelect';
 
 export default function InlineConfigAndLogs() {
   const [sessionTitle, setSessionTitle] = useState('Morning Architectural Seminar // Room 402');
@@ -8,6 +9,40 @@ export default function InlineConfigAndLogs() {
   const [aiCadence, setAiCadence] = useState('10 Seconds (Responsive)');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [commitMessage, setCommitMessage] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/calibration')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.sustained_threshold) setThreshold(data.sustained_threshold);
+        if (data.vad_sensitivity) setVadSensitivity(data.vad_sensitivity);
+        if (data.ai_cadence_seconds === 5) setAiCadence('5 Seconds (High Velocity)');
+        else if (data.ai_cadence_seconds === 30) setAiCadence('30 Seconds (Contemplative)');
+        else setAiCadence('10 Seconds (Responsive)');
+      })
+      .catch(() => {});
+  }, []);
+
+  const cadenceOptions = [
+    {
+      value: '5 Seconds (High Velocity)',
+      label: '5 Seconds (High Velocity)',
+      badge: 'RAPID SENSING',
+      description: 'Instant reaction to gaze drops and fidgeting; ideal for fast-paced studio critiques.',
+    },
+    {
+      value: '10 Seconds (Responsive)',
+      label: '10 Seconds (Responsive — Standard)',
+      badge: 'RECOMMENDED',
+      description: 'Optimal academic balance buffering transient distractions while offering timely interventions.',
+    },
+    {
+      value: '30 Seconds (Contemplative)',
+      label: '30 Seconds (Contemplative)',
+      badge: 'LONG ARC',
+      description: 'Slow-burn philosophical observation; evaluates long-arc cognitive focus without micromanaging.',
+    },
+  ];
 
   const handleCommitCalibration = async (e) => {
     e.preventDefault();
@@ -197,20 +232,15 @@ export default function InlineConfigAndLogs() {
                 />
               </div>
 
-              {/* AI Agent Cadence */}
+              {/* AI Agent Cadence Custom Editorial Select */}
               <div className="space-y-1.5 sm:space-y-2">
-                <label className="font-mono text-xs text-mocha uppercase block tracking-wider">
-                  Pedagogical Review Frequency
-                </label>
-                <select
+                <AtelierSelect
+                  label="Pedagogical Review Frequency"
                   value={aiCadence}
-                  onChange={(e) => setAiCadence(e.target.value)}
-                  className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-foam border border-mocha/40 text-espresso font-mono text-xs focus:outline-none focus:border-caramel transition-colors"
-                >
-                  <option value="5 Seconds (High Velocity)">5 Seconds (High Velocity)</option>
-                  <option value="10 Seconds (Responsive)">10 Seconds (Responsive — Standard)</option>
-                  <option value="30 Seconds (Contemplative)">30 Seconds (Contemplative)</option>
-                </select>
+                  onChange={setAiCadence}
+                  options={cadenceOptions}
+                  theme="light"
+                />
               </div>
 
               {/* Commit Button */}

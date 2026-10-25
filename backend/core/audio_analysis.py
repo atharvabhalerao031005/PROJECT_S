@@ -41,6 +41,11 @@ class AudioAnalyzer:
         self.healthy_speech_max_db = -12.0
         self._phase = 0.0
 
+    def set_vad_threshold(self, vad_floor_db: float) -> None:
+        """Dynamically recalibrates silence/speech energy threshold in dBFS."""
+        self.silence_threshold_dbfs = float(vad_floor_db)
+        self.healthy_speech_min_db = float(vad_floor_db) + 8.0
+
     def analyze_pcm_samples(
         self,
         samples: Union[np.ndarray, List[float], bytes, None],

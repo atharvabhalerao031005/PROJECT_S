@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 
-export default function EditorialFooter() {
+export default function EditorialFooter({ onOpenGuide }) {
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -42,6 +42,16 @@ export default function EditorialFooter() {
               Crafted as an analog study journal from an architectural studio. Multimodal telemetry 
               respecting human dignity, student attention, and offline computational sovereignty.
             </p>
+            <div className="flex flex-col sm:flex-row items-start gap-2 pt-1">
+              <button
+                type="button"
+                onClick={onOpenGuide}
+                className="font-mono text-[11px] uppercase tracking-wider text-caramel hover:text-foam border border-caramel/50 px-3 py-1.5 bg-roast/40 hover:bg-caramel/20 transition-all cursor-pointer flex items-center space-x-1.5"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-caramel animate-incandescent" />
+                <span>Open Atelier Guide [ ? ]</span>
+              </button>
+            </div>
             <div className="tactile-status-pill border-roast/70 bg-roast/40">
               <span className="w-1.5 h-1.5 rounded-full bg-caramel animate-tape-blink" />
               <span className="text-latte font-mono text-[9px] font-medium">AIR-GAPPED TELEMETRY ARCHITECTURE</span>

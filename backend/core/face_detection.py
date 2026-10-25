@@ -118,7 +118,7 @@ class TrackedParticipant:
                 self.verified_at = timestamp
             self.is_verified = True
             self.is_walk_by = False
-            self.status = VerificationStatus("Verified Present (>=10s)")
+            self.status = VerificationStatus(f"Verified Present (>={int(threshold)}s)")
         elif self.duration >= 3.0:
             self.is_verified = False
             self.status = VerificationStatus("Verifying...")
@@ -172,6 +172,20 @@ class FaceDetector:
                 self.face_cascade = cv2.CascadeClassifier(sample_path)
             except Exception:
                 self.face_cascade = None
+
+    def set_sustained_threshold(self, new_threshold: float) -> None:
+        """Dynamically recalibrates sustained presence threshold across all active tracks."""
+        self.sustained_threshold = max(1.0, float(new_threshold))
+        for track in self.tracks.values():
+            if track.duration >= self.sustained_threshold:
+                track.is_verified = True
+                track.status = VerificationStatus(f"Verified Present (>={int(self.sustained_threshold)}s)")
+            elif track.duration >= 3.0:
+                track.is_verified = False
+                track.status = VerificationStatus("Verifying...")
+            else:
+                track.is_verified = False
+                track.status = VerificationStatus("Transient (<3s)")
 
     def _auto_commit_verified_attendance(self, track: TrackedParticipant) -> None:
         """Commits verified participant presence to SQLite AttendanceLog."""

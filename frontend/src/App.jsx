@@ -6,6 +6,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import GrainOverlay from './components/GrainOverlay';
 import CustomCursor from './components/CustomCursor';
 import Navbar from './components/Navbar';
+import AtelierDialogueGuide from './components/AtelierDialogueGuide';
 
 import HeroSection from './sections/HeroSection';
 import StoryPhilosophy from './sections/StoryPhilosophy';
@@ -24,6 +25,7 @@ export default function App() {
   const lenisRef = useRef(null);
   const [navTheme, setNavTheme] = useState('dark');
   const [activeSection, setActiveSection] = useState('hero');
+  const [isGuideOpen, setIsGuideOpen] = useState(true);
 
   useEffect(() => {
     // 1. Initialize Lenis Smooth Scroll
@@ -157,12 +159,19 @@ export default function App() {
       <CustomCursor />
 
       {/* Dynamic Theme Synchronized Navbar */}
-      <Navbar navTheme={navTheme} activeSection={activeSection} />
+      <Navbar
+        navTheme={navTheme}
+        activeSection={activeSection}
+        onOpenGuide={() => setIsGuideOpen(true)}
+      />
 
       {/* Main Content Flow */}
       <main className="relative w-full">
         {/* Section 1: Hero with 6-Layer Parallax */}
-        <HeroSection onStartSession={telemetry.startHardwareStream} />
+        <HeroSection
+          onStartSession={telemetry.startHardwareStream}
+          onOpenGuide={() => setIsGuideOpen(true)}
+        />
 
         {/* Section 2: Pinned Italic Manifesto & Rotating Stamp */}
         <StoryPhilosophy />
@@ -180,8 +189,15 @@ export default function App() {
         <InlineConfigAndLogs />
 
         {/* Section 7: Editorial Footer with Cropped Wordmark & Rising Steam */}
-        <EditorialFooter />
+        <EditorialFooter onOpenGuide={() => setIsGuideOpen(true)} />
       </main>
+
+      {/* Floating Bespoke Atelier Concierge Dialogue Guide */}
+      <AtelierDialogueGuide
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+        onOpen={() => setIsGuideOpen(true)}
+      />
     </div>
   );
 }

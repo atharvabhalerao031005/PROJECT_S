@@ -181,17 +181,41 @@ def get_analytics(db: Session = Depends(get_db)):
     }
 
 
+@app.get("/api/calibration")
+def get_calibration():
+    """Returns the live calibrated parameters of the sensory rig."""
+    return {
+        "status": "calibrated",
+        "sustained_threshold": face_detector.sustained_threshold,
+        "vad_sensitivity": audio_analyzer.silence_threshold_dbfs,
+        "ai_cadence_seconds": ai_agent.throttle_seconds,
+        "ai_cadence": f"{int(ai_agent.throttle_seconds)} Seconds",
+        "active_tracks": len(face_detector.tracks),
+        "sqlite_wal_enabled": True,
+    }
+
+
 @app.post("/api/calibration")
 def update_calibration(payload: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
-    """Updates sustained presence duration threshold and triggers an immediate AI suggestion logged to SQLite."""
+    """Updates sustained presence duration threshold, acoustic VAD sensitivity, and AI cadence in real-time."""
     global latest_ai_suggestion
     threshold = float(payload.get("sustained_threshold", 10.0))
-    face_detector.sustained_threshold = threshold
+    vad_sensitivity = float(payload.get("vad_sensitivity", -32.0))
+    ai_cadence = payload.get("ai_cadence", "10 Seconds (Responsive)")
+
+    # 1. Update Face Detector sustained presence threshold dynamically across all active tracks
+    face_detector.set_sustained_threshold(threshold)
+
+    # 2. Update Audio Analyzer VAD sensitivity floor
+    audio_analyzer.set_vad_threshold(vad_sensitivity)
+
+    # 3. Update AI Agent throttle cadence
+    throttle_sec = ai_agent.set_cadence(ai_cadence)
 
     session_name = payload.get("session_title", "Studio Morning Session")
     notes = payload.get("notes", "Recalibrated by instructor")
 
-    # Generate immediate pedagogical insight with force_refresh
+    # 4. Generate immediate pedagogical insight with force_refresh
     active_faces = len(face_detector.tracks)
     sim_fusion = 84.5
     trend = fusion_engine._determine_trend()
@@ -209,11 +233,11 @@ def update_calibration(payload: Dict[str, Any] = Body(...), db: Session = Depend
     )
     latest_ai_suggestion = new_suggestion
 
-    # Save suggestion to SQLite
+    # 5. Save calibration insight to SQLite
     db_sugg = AIInsight(
         session_id=session_name,
         timestamp=datetime.utcnow(),
-        engagement_context=f"Threshold updated to {threshold}s. {notes}",
+        engagement_context=f"Threshold: {threshold}s, VAD: {vad_sensitivity}dB, Cadence: {int(throttle_sec)}s. {notes}",
         suggestion_text=new_suggestion["suggestion"],
         pacing_action=new_suggestion["pacing_action"],
         provider=new_suggestion.get("provider", "Offline Heuristic Engine (Local)"),
@@ -224,6 +248,8 @@ def update_calibration(payload: Dict[str, Any] = Body(...), db: Session = Depend
     return {
         "status": "success",
         "sustained_threshold": threshold,
+        "vad_sensitivity": vad_sensitivity,
+        "ai_cadence_seconds": throttle_sec,
         "session_title": session_name,
         "latest_suggestion": new_suggestion,
     }

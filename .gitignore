@@ -60,3 +60,6 @@ Thumbs.db
 .coverage
 htmlcov/
 .pytest_cache/
+
+*.db-shm
+*.db-wal

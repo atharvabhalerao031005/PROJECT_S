@@ -4,10 +4,11 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function Navbar({ navTheme: propTheme, activeSection: propActiveSection }) {
+export default function Navbar({ navTheme: propTheme, activeSection: propActiveSection, onOpenGuide }) {
   const navRef = useRef(null);
   const [internalTheme, setInternalTheme] = useState('dark');
   const [internalActiveSection, setInternalActiveSection] = useState('hero');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Pinned state: true = always sticky and visible; false = smart auto-hide with instant top-mouse reveal
   const [isPinned, setIsPinned] = useState(() => {
@@ -213,7 +214,7 @@ export default function Navbar({ navTheme: propTheme, activeSection: propActiveS
           </a>
 
           {/* Right: Editorial Links + Controls with Dynamic Contrast */}
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav className="hidden md:flex items-center space-x-5 lg:space-x-6">
             {navItems.map((item) => {
               const isActive = currentActiveSection === item.id;
               return (
@@ -232,6 +233,20 @@ export default function Navbar({ navTheme: propTheme, activeSection: propActiveS
                 </button>
               );
             })}
+
+            {/* In-Theme Guide Button */}
+            <button
+              onClick={onOpenGuide}
+              title="Open Atelier Interactive Concierge & Walkthrough Guide"
+              className={`font-mono text-xs uppercase tracking-wider px-2.5 py-1 border transition-all cursor-pointer flex items-center space-x-1.5 ${
+                isLight
+                  ? 'border-caramel/50 text-caramel hover:bg-caramel/10'
+                  : 'border-caramel/60 text-caramel hover:bg-caramel/15'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-caramel animate-incandescent" />
+              <span>Guide [?]</span>
+            </button>
 
             {/* Start Session CTA Button */}
             <button
@@ -275,32 +290,85 @@ export default function Navbar({ navTheme: propTheme, activeSection: propActiveS
             </button>
           </nav>
 
-          {/* Mobile View Compact Controls */}
+          {/* Mobile View Controls */}
           <div className="md:hidden flex items-center space-x-2">
             <button
-              onClick={togglePin}
-              className={`font-mono text-[9px] uppercase tracking-wider px-2 py-1 border transition-colors ${
-                isPinned
-                  ? 'border-caramel text-caramel bg-caramel/10'
-                  : isLight
-                  ? 'border-mocha/30 text-mocha/70'
-                  : 'border-mocha/50 text-mocha'
-              }`}
-            >
-              {isPinned ? 'STICKY' : 'HIDE'}
-            </button>
-            <button
-              onClick={() => scrollToSection('live-desk')}
-              className={`font-mono text-[11px] uppercase tracking-wider px-3 py-1 border transition-colors ${
+              onClick={onOpenGuide}
+              className={`font-mono text-[10px] uppercase tracking-wider px-2 py-1 border transition-colors ${
                 isLight
                   ? 'border-caramel text-caramel bg-caramel/10'
                   : 'border-caramel text-caramel bg-espresso/80'
               }`}
             >
-              Session →
+              Guide [?]
+            </button>
+
+            {/* Hamburger Toggle */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle Navigation Drawer"
+              className={`p-1.5 border transition-colors cursor-pointer ${
+                isLight ? 'border-mocha/30 text-espresso' : 'border-roast text-foam'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {isMobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
             </button>
           </div>
         </div>
+
+        {/* Mobile Dropdown Drawer */}
+        {isMobileMenuOpen && (
+          <div
+            className={`md:hidden border-t px-6 py-4 space-y-3 animate-in slide-in-from-top-2 duration-150 backdrop-blur-md ${
+              isLight
+                ? 'bg-[#F7F0E3]/98 border-[#6B4630]/20 text-espresso divide-y divide-mocha/20'
+                : 'bg-[#1C1310]/98 border-[#3A2619]/80 text-foam divide-y divide-roast/60'
+            }`}
+          >
+            <div className="space-y-2 pb-2">
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    scrollToSection(item.id);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full text-left font-mono text-xs tracking-wider py-1.5 flex items-center justify-between text-caramel font-medium"
+                >
+                  <span>{item.label}</span>
+                  <span className="text-latte/60 text-xs">→</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="pt-3 flex items-center justify-between">
+              <button
+                onClick={() => {
+                  togglePin();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="font-mono text-[10px] uppercase tracking-wider text-mocha"
+              >
+                Nav Mode: <span className="text-caramel font-semibold">{isPinned ? 'Sticky' : 'Auto-Hide'}</span>
+              </button>
+              <button
+                onClick={() => {
+                  scrollToSection('live-desk');
+                  setIsMobileMenuOpen(false);
+                }}
+                className="font-mono text-xs uppercase px-3 py-1.5 bg-caramel text-espresso font-semibold"
+              >
+                Start Session →
+              </button>
+            </div>
+          </div>
+        )}
       </header>
     </>
   );

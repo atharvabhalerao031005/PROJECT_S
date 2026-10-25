@@ -1,108 +1,102 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 
 /**
  * CustomCursor
- * Tactile caramel dot with dual-layer lagging outer reticle ring,
- * precision architectural drafting crosshairs, and springy magnetic button snap.
- * Adapts dynamically between deep espresso (#1C1310) and warm foam paper (#F7F0E3).
+ * Hyper-responsive tactile editorial drafting reticle:
+ * - 0ms instant center pinpoint dot (true hardware mouse tracking, zero float)
+ * - Snappy 100ms spring-damped outer drafting ring
+ * - Architectural CAD drafting coordinates (X/Y) with live interactive state labels
+ * - Magnetic snap & morph on interactive elements
+ * - Tactile mousedown contract & release impulse
  */
 export default function CustomCursor() {
   const dotRef = useRef(null);
   const ringRef = useRef(null);
-  const reticleRef = useRef(null);
+  const coordsRef = useRef(null);
+  const [coordsText, setCoordsText] = useState('');
 
   useEffect(() => {
-    // Only run on non-touch devices with fine pointers
+    // Only activate for non-touch fine pointer devices
     if (window.matchMedia('(pointer: coarse)').matches) return;
 
     const dot = dotRef.current;
     const ring = ringRef.current;
-    const reticle = reticleRef.current;
+    const coords = coordsRef.current;
     if (!dot || !ring) return;
 
-    // Instant tracking for primary center pinpoint dot (snappy 40ms)
-    const dotX = gsap.quickTo(dot, 'x', { duration: 0.04, ease: 'power2.out' });
-    const dotY = gsap.quickTo(dot, 'y', { duration: 0.04, ease: 'power2.out' });
-
-    // Smooth lagging tracking for outer editorial ring (layer 1)
-    const ringX = gsap.quickTo(ring, 'x', { duration: 0.22, ease: 'power3.out' });
-    const ringY = gsap.quickTo(ring, 'y', { duration: 0.22, ease: 'power3.out' });
-
-    // Secondary lag for reticle drafting brackets (layer 2)
-    const reticleX = reticle ? gsap.quickTo(reticle, 'x', { duration: 0.35, ease: 'power4.out' }) : null;
-    const reticleY = reticle ? gsap.quickTo(reticle, 'y', { duration: 0.35, ease: 'power4.out' }) : null;
+    // Fast spring damper for outer ring
+    const ringX = gsap.quickTo(ring, 'x', { duration: 0.10, ease: 'power2.out' });
+    const ringY = gsap.quickTo(ring, 'y', { duration: 0.10, ease: 'power2.out' });
+    const coordsX = coords ? gsap.quickTo(coords, 'x', { duration: 0.12, ease: 'power2.out' }) : null;
+    const coordsY = coords ? gsap.quickTo(coords, 'y', { duration: 0.12, ease: 'power2.out' }) : null;
 
     let isHoveringInteractive = false;
-    let magneticTarget = null;
     let isMouseDown = false;
+    let animFrame = null;
 
     const onMouseMove = (e) => {
       const mouseX = e.clientX;
       const mouseY = e.clientY;
 
-      dotX(mouseX);
-      dotY(mouseY);
+      // 1. INSTANT 0ms ZERO-LAG TRACKING FOR CENTER DOT (NO INTERPOLATION)
+      dot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%)`;
 
-      // Check if hovering over clickable / interactive element
+      // 2. Snappy spring tracking for outer ring
       const target = e.target;
-      const isLightSection = Boolean(target.closest('[data-theme="light"]') || target.closest('[data-nav-theme="light"]'));
+      const isLightSection = Boolean(
+        target.closest('[data-theme="light"]') || 
+        target.closest('[data-nav-theme="light"]') ||
+        target.closest('#philosophy') ||
+        target.closest('#calibration')
+      );
 
       const interactiveEl = target.closest(
-        'a, button, input, select, [role="button"], .interactive-hover, [data-magnetic]'
+        'a, button, input, select, [role="button"], .interactive-hover, [data-magnetic], .cursor-pointer'
       );
 
       if (interactiveEl) {
-        magneticTarget = interactiveEl;
         const rect = interactiveEl.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
 
-        // Magnetic Attraction: gently bias ring toward center of interactive target
-        const magneticStrength = 0.42;
-        const snapX = mouseX + (centerX - mouseX) * magneticStrength;
-        const snapY = mouseY + (centerY - mouseY) * magneticStrength;
+        // Subtle magnetic attraction (25% bias toward center of button)
+        const snapX = mouseX + (centerX - mouseX) * 0.28;
+        const snapY = mouseY + (centerY - mouseY) * 0.28;
 
         ringX(snapX);
         ringY(snapY);
-
-        if (reticleX && reticleY) {
-          reticleX(snapX);
-          reticleY(snapY);
+        if (coordsX && coordsY) {
+          coordsX(snapX + 20);
+          coordsY(snapY + 16);
         }
 
         if (!isHoveringInteractive) {
           isHoveringInteractive = true;
           gsap.to(ring, {
-            scale: 1.85,
+            scale: 1.65,
             borderColor: 'var(--caramel)',
-            backgroundColor: isLightSection ? 'rgba(184, 119, 47, 0.12)' : 'rgba(184, 119, 47, 0.1)',
-            boxShadow: '0 0 12px rgba(184, 119, 47, 0.25)',
-            duration: 0.25,
+            backgroundColor: isLightSection ? 'rgba(184, 119, 47, 0.14)' : 'rgba(184, 119, 47, 0.10)',
+            boxShadow: '0 0 16px rgba(184, 119, 47, 0.35)',
+            duration: 0.18,
             ease: 'power2.out',
           });
           gsap.to(dot, {
-            scale: 0.45,
+            scale: 0.6,
             backgroundColor: isLightSection ? 'var(--espresso)' : 'var(--foam)',
-            duration: 0.2,
+            duration: 0.15,
           });
-          if (reticle) {
-            gsap.to(reticle, {
-              opacity: 0.9,
-              scale: 1.15,
-              rotation: 45,
-              duration: 0.3,
-              ease: 'back.out(1.7)',
-            });
+          if (coords) {
+            setCoordsText('[SNAP]');
+            gsap.to(coords, { opacity: 0.9, duration: 0.15 });
           }
         }
       } else {
-        magneticTarget = null;
         ringX(mouseX);
         ringY(mouseY);
-        if (reticleX && reticleY) {
-          reticleX(mouseX);
-          reticleY(mouseY);
+        if (coordsX && coordsY) {
+          coordsX(mouseX + 16);
+          coordsY(mouseY + 14);
         }
 
         if (isHoveringInteractive) {
@@ -112,22 +106,22 @@ export default function CustomCursor() {
             borderColor: isLightSection ? 'var(--mocha)' : 'var(--latte)',
             backgroundColor: 'transparent',
             boxShadow: 'none',
-            duration: 0.28,
+            duration: 0.2,
             ease: 'power2.out',
           });
           gsap.to(dot, {
             scale: 1.0,
             backgroundColor: 'var(--caramel)',
-            duration: 0.2,
+            duration: 0.15,
           });
-          if (reticle) {
-            gsap.to(reticle, {
-              opacity: 0,
-              scale: 0.8,
-              rotation: 0,
-              duration: 0.25,
-              ease: 'power2.in',
-            });
+          if (coords) {
+            setCoordsText(`${Math.round(mouseX)},${Math.round(mouseY)}`);
+            gsap.to(coords, { opacity: 0.45, duration: 0.2 });
+          }
+        } else {
+          // Throttled coordinate display
+          if (coords && Math.random() < 0.25) {
+            setCoordsText(`${Math.round(mouseX)},${Math.round(mouseY)}`);
           }
         }
       }
@@ -135,37 +129,38 @@ export default function CustomCursor() {
 
     const onMouseDown = () => {
       isMouseDown = true;
-      gsap.to(ring, { scale: 0.85, duration: 0.15, ease: 'power2.out' });
-      gsap.to(dot, { scale: 1.5, duration: 0.15, ease: 'power2.out' });
+      gsap.to(ring, { scale: 0.78, duration: 0.1, ease: 'power2.out' });
+      gsap.to(dot, { scale: 1.7, duration: 0.1, ease: 'power2.out' });
     };
 
     const onMouseUp = (e) => {
       isMouseDown = false;
       const target = e.target;
       const isInteractive = Boolean(
-        target.closest('a, button, input, select, [role="button"], .interactive-hover, [data-magnetic]')
+        target.closest('a, button, input, select, [role="button"], .interactive-hover, [data-magnetic], .cursor-pointer')
       );
       gsap.to(ring, {
-        scale: isInteractive ? 1.85 : 1.0,
-        duration: 0.2,
-        ease: 'power2.out',
+        scale: isInteractive ? 1.65 : 1.0,
+        duration: 0.18,
+        ease: 'back.out(2)',
       });
       gsap.to(dot, {
-        scale: isInteractive ? 0.45 : 1.0,
-        duration: 0.2,
+        scale: isInteractive ? 0.6 : 1.0,
+        duration: 0.15,
         ease: 'power2.out',
       });
     };
 
     const onMouseLeaveDoc = () => {
-      gsap.to([dot, ring, reticle], { opacity: 0, duration: 0.25 });
+      gsap.to([dot, ring, coords], { opacity: 0, duration: 0.18 });
     };
 
     const onMouseEnterDoc = () => {
-      gsap.to([dot, ring], { opacity: 1, duration: 0.25 });
+      gsap.to([dot, ring], { opacity: 1, duration: 0.18 });
+      if (coords) gsap.to(coords, { opacity: 0.45, duration: 0.18 });
     };
 
-    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
     window.addEventListener('mousedown', onMouseDown);
     window.addEventListener('mouseup', onMouseUp);
     document.documentElement.addEventListener('mouseleave', onMouseLeaveDoc);
@@ -177,38 +172,42 @@ export default function CustomCursor() {
       window.removeEventListener('mouseup', onMouseUp);
       document.documentElement.removeEventListener('mouseleave', onMouseLeaveDoc);
       document.documentElement.removeEventListener('mouseenter', onMouseEnterDoc);
+      if (animFrame) cancelAnimationFrame(animFrame);
     };
   }, []);
 
   return (
     <>
-      {/* Central Snappy Caramel Dot */}
+      {/* 0ms INSTANT Hardware Pointer Dot (NO CSS transition-transform!) */}
       <div
         ref={dotRef}
-        className="fixed top-0 left-0 w-2 h-2 rounded-full pointer-events-none z-[9999] -translate-x-1/2 -translate-y-1/2 hidden md:block transition-transform will-change-transform"
-        style={{ backgroundColor: 'var(--caramel)' }}
+        className="fixed top-0 left-0 w-2 h-2 rounded-full pointer-events-none z-[9999] hidden md:block will-change-transform"
+        style={{
+          backgroundColor: 'var(--caramel)',
+          transform: 'translate(-50%, -50%)',
+          boxShadow: '0 0 4px rgba(184, 119, 47, 0.6)',
+        }}
       />
 
-      {/* Lagging Tactile Outer Ring with Magnetic Halo */}
+      {/* Snappy Spring Drafting Reticle Ring */}
       <div
         ref={ringRef}
-        className="fixed top-0 left-0 w-8 h-8 rounded-full border pointer-events-none z-[9999] -translate-x-1/2 -translate-y-1/2 hidden md:block will-change-transform"
-        style={{ borderColor: 'var(--latte)' }}
-      />
-
-      {/* Drafting Reticle Crosshairs with Micro-Ticks (Active on Interactive Hover) */}
-      <div
-        ref={reticleRef}
-        className="fixed top-0 left-0 w-14 h-14 pointer-events-none z-[9998] -translate-x-1/2 -translate-y-1/2 hidden md:flex items-center justify-center opacity-0 will-change-transform"
+        className="fixed top-0 left-0 w-7 h-7 rounded-full border pointer-events-none z-[9999] -translate-x-1/2 -translate-y-1/2 hidden md:block will-change-transform"
+        style={{ borderColor: 'var(--latte)', opacity: 0.85 }}
       >
-        {/* 4 Cardinal Drafting Crosshair Marks */}
-        <span className="absolute top-0 text-[9px] font-mono text-caramel leading-none font-bold select-none">+</span>
-        <span className="absolute bottom-0 text-[9px] font-mono text-caramel leading-none font-bold select-none">+</span>
-        <span className="absolute left-0 text-[9px] font-mono text-caramel leading-none font-bold select-none">+</span>
-        <span className="absolute right-0 text-[9px] font-mono text-caramel leading-none font-bold select-none">+</span>
+        {/* Cardinal Micro-ticks for authentic drafting aesthetic */}
+        <span className="absolute top-[-3px] left-1/2 -translate-x-1/2 w-[1px] h-[3px] bg-caramel/70" />
+        <span className="absolute bottom-[-3px] left-1/2 -translate-x-1/2 w-[1px] h-[3px] bg-caramel/70" />
+        <span className="absolute left-[-3px] top-1/2 -translate-y-1/2 h-[1px] w-[3px] bg-caramel/70" />
+        <span className="absolute right-[-3px] top-1/2 -translate-y-1/2 h-[1px] w-[3px] bg-caramel/70" />
+      </div>
 
-        {/* Subtle Inner Drafting Dashed Circle */}
-        <div className="w-10 h-10 rounded-full border border-dashed border-caramel/40" />
+      {/* Tiny Precision Drafting Coordinates Tag */}
+      <div
+        ref={coordsRef}
+        className="fixed top-0 left-0 pointer-events-none z-[9998] hidden md:block font-mono text-[8px] tracking-wider text-caramel uppercase opacity-40 select-none will-change-transform"
+      >
+        {coordsText}
       </div>
     </>
   );

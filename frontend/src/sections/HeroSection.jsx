@@ -3,7 +3,7 @@ import gsap from 'gsap';
 import HeroParallaxScene from '../components/svgs/HeroParallaxScene';
 import { useMagnetic } from '../hooks/useMagnetic';
 
-export default function HeroSection({ onStartSession }) {
+export default function HeroSection({ onStartSession, onOpenGuide }) {
   const containerRef = useRef(null);
   const titleLine1Ref = useRef(null);
   const titleLine2Ref = useRef(null);
@@ -129,11 +129,11 @@ export default function HeroSection({ onStartSession }) {
             </p>
 
             {/* CTAs */}
-            <div ref={ctaGroupRef} className="flex flex-wrap items-center gap-6 pt-2">
+            <div ref={ctaGroupRef} className="flex flex-wrap items-center gap-4 sm:gap-6 pt-2">
               <button
                 ref={magneticButtonRef}
                 onClick={scrollToLive}
-                className="relative group overflow-hidden px-8 py-4 border border-caramel bg-transparent text-foam font-mono text-xs uppercase tracking-widest transition-colors duration-300 cursor-pointer shadow-lg font-medium"
+                className="relative group overflow-hidden px-7 py-3.5 sm:px-8 sm:py-4 border border-caramel bg-transparent text-foam font-mono text-xs uppercase tracking-widest transition-colors duration-300 cursor-pointer shadow-lg font-medium"
               >
                 {/* Bottom-up caramel fill wipe */}
                 <span className="absolute inset-0 bg-caramel translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-0" />
@@ -144,10 +144,19 @@ export default function HeroSection({ onStartSession }) {
               </button>
 
               <button
-                onClick={scrollToPour}
-                className="micro-label text-latte hover:text-foam border-b border-mocha/60 hover:border-foam pb-1 transition-colors bg-transparent cursor-pointer font-medium"
+                type="button"
+                onClick={onOpenGuide}
+                className="relative group px-5 py-3.5 sm:py-4 border border-mocha/60 bg-roast/40 hover:bg-roast hover:border-caramel text-foam font-mono text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center space-x-2 shadow-sm"
               >
-                02 / Explore The Pour Pipeline
+                <span className="w-1.5 h-1.5 rounded-full bg-caramel animate-incandescent" />
+                <span className="text-caramel font-semibold">Concierge Guide [ ? ]</span>
+              </button>
+
+              <button
+                onClick={scrollToPour}
+                className="micro-label text-latte hover:text-foam border-b border-mocha/60 hover:border-foam pb-1 transition-colors bg-transparent cursor-pointer font-medium text-[11px]"
+              >
+                02 / Pipeline
               </button>
             </div>
 

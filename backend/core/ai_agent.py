@@ -42,10 +42,25 @@ class PedagogicalAgent:
                 except Exception:
                     self.gemini_client = None
 
-        # 10-second Throttling Cache & Rate Protection State
+        # Throttling Cache & Rate Protection State (Calibrated Cadence)
+        self.throttle_seconds: float = 10.0
         self.last_query_time: float = 0.0
         self.last_trend: Optional[str] = None
         self.cached_insight: Optional[Dict[str, Any]] = None
+
+    def set_cadence(self, cadence_str_or_seconds: Any) -> float:
+        """Sets pedagogical advisory review frequency dynamically."""
+        if isinstance(cadence_str_or_seconds, (int, float)):
+            self.throttle_seconds = max(3.0, float(cadence_str_or_seconds))
+        else:
+            cad_lower = str(cadence_str_or_seconds).lower()
+            if "5" in cad_lower or "high" in cad_lower:
+                self.throttle_seconds = 5.0
+            elif "30" in cad_lower or "contemplative" in cad_lower:
+                self.throttle_seconds = 30.0
+            else:
+                self.throttle_seconds = 10.0
+        return self.throttle_seconds
 
     def generate_suggestion(
         self,
@@ -61,19 +76,19 @@ class PedagogicalAgent:
     ) -> Dict[str, Any]:
         """Synthesizes multimodal telemetry streams into a context-aware pedagogical recommendation.
 
-        Rate Protection: Uses an internal 10-second cache. LLMs are only queried if the trend changes,
-        at least 10 seconds have elapsed, or force_refresh is requested.
+        Rate Protection: Uses an internal calibrated cache. LLMs are only queried if the trend changes,
+        at least throttle_seconds have elapsed, or force_refresh is requested.
         """
         now = time.time()
         elapsed = now - self.last_query_time
         trend_changed = (trend != self.last_trend)
 
-        # Re-use cached insight if within 10 seconds and trend hasn't changed
+        # Re-use cached insight if within calibrated throttle_seconds and trend hasn't changed
         if (
             not force_refresh
             and self.cached_insight is not None
             and not trend_changed
-            and elapsed < 10.0
+            and elapsed < self.throttle_seconds
         ):
             return self.cached_insight
 
