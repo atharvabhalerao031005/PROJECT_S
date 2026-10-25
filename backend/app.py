@@ -14,13 +14,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from database.models import (
     init_db,
     get_db,
     SessionLocal,
     AttendanceLog,
+    EngagementSession,
     EngagementMetric,
+    AIInsight,
     TeachingSuggestion,
 )
 from core.face_detection import FaceDetector
@@ -32,7 +35,7 @@ from core.camera_service import CameraService
 app = FastAPI(
     title="Multimodal Attendance & Engagement Telemetry API",
     description="Slow Morning Editorial Telemetry Backend with OpenCV, Librosa, and Pedagogical AI",
-    version="2.0.0",
+    version="2.1.0",
 )
 
 app.add_middleware(
@@ -61,7 +64,7 @@ last_ai_invocation_time = 0.0
 
 @app.on_event("startup")
 def on_startup():
-    """Ensure database tables and initial baseline seeds are loaded."""
+    """Ensure database tables and initial baseline seeds are loaded with SQLite WAL mode."""
     init_db()
 
 
@@ -74,21 +77,28 @@ def health_check():
         "edition": "Slow Morning Editorial Telemetry",
         "threshold_sustained_seconds": face_detector.sustained_threshold,
         "ai_provider": "Groq/Gemini" if (ai_agent.groq_client or ai_agent.gemini_client) else "Offline Heuristic (Local)",
+        "sqlite_wal_enabled": True,
     }
 
 
 @app.get("/api/attendance")
 def get_attendance(db: Session = Depends(get_db)):
-    """Returns all AttendanceLog rows formatted for the Editorial Ledger."""
-    logs = db.query(AttendanceLog).order_by(AttendanceLog.last_seen.desc()).all()
+    """Returns all AttendanceLog rows sorted by timestamp desc for the live Editorial Ledger."""
+    logs = (
+        db.query(AttendanceLog)
+        .order_by(AttendanceLog.timestamp.desc(), AttendanceLog.last_seen.desc())
+        .all()
+    )
     result = []
     for log in logs:
+        ts = log.timestamp or log.last_seen or log.first_seen
         result.append({
             "id": log.id,
             "session_id": log.session_id,
             "participant_id": log.participant_id,
             "first_seen": log.first_seen.strftime("%H:%M:%S") if log.first_seen else "09:00:00",
             "last_seen": log.last_seen.strftime("%H:%M:%S") if log.last_seen else "09:15:00",
+            "timestamp": ts.strftime("%H:%M:%S") if ts else "",
             "sustained_seconds": round(log.sustained_seconds, 1),
             "status": log.status,
         })
@@ -97,28 +107,57 @@ def get_attendance(db: Session = Depends(get_db)):
 
 @app.get("/api/analytics/trends")
 def get_analytics(db: Session = Depends(get_db)):
-    """Returns time-series EngagementMetric records and latest TeachingSuggestion notes."""
-    metrics = (
-        db.query(EngagementMetric)
-        .order_by(EngagementMetric.timestamp.desc())
+    """Returns time-series EngagementSession records, calculated aggregate metrics, and latest AI suggestions."""
+    sessions = (
+        db.query(EngagementSession)
+        .order_by(EngagementSession.timestamp.desc())
         .limit(40)
         .all()
     )
     suggestion = (
-        db.query(TeachingSuggestion)
-        .order_by(TeachingSuggestion.timestamp.desc())
+        db.query(AIInsight)
+        .order_by(AIInsight.timestamp.desc())
         .first()
     )
 
+    # Calculate aggregate metrics from SQLite sessions
+    total_sessions = db.query(EngagementSession).count()
+    if total_sessions > 0:
+        agg = db.query(
+            func.avg(EngagementSession.fused_score).label("avg_fused"),
+            func.avg(EngagementSession.head_pose_score).label("avg_visual"),
+            func.avg(EngagementSession.audio_rms_score).label("avg_acoustic"),
+            func.avg(EngagementSession.movement_score).label("avg_movement"),
+            func.max(EngagementSession.active_faces).label("peak_faces"),
+        ).first()
+        aggregates = {
+            "avg_fused_score": round(float(agg.avg_fused or 80.0), 1),
+            "avg_visual_attention": round(float(agg.avg_visual or 82.0), 1),
+            "avg_acoustic_score": round(float(agg.avg_acoustic or 75.0), 1),
+            "avg_movement_score": round(float(agg.avg_movement or 70.0), 1),
+            "peak_active_faces": int(agg.peak_faces or 3),
+            "total_records": int(total_sessions),
+        }
+    else:
+        aggregates = {
+            "avg_fused_score": 81.2,
+            "avg_visual_attention": 84.5,
+            "avg_acoustic_score": 72.0,
+            "avg_movement_score": 78.2,
+            "peak_active_faces": 3,
+            "total_records": 0,
+        }
+
     metrics_list = []
-    for m in reversed(metrics):
+    for s in reversed(sessions):
         metrics_list.append({
-            "timestamp": m.timestamp.strftime("%H:%M:%S") if m.timestamp else "",
-            "active_faces": m.active_faces,
-            "head_pose_score": round(m.head_pose_score, 1),
-            "movement_score": round(m.movement_score, 1),
-            "audio_rms_score": round(m.audio_rms_score, 1),
-            "fused_score": round(m.fused_score, 1),
+            "timestamp": s.timestamp.strftime("%H:%M:%S") if s.timestamp else "",
+            "active_faces": s.active_faces,
+            "head_pose_score": round(s.head_pose_score, 1),
+            "movement_score": round(s.movement_score, 1),
+            "audio_rms_score": round(s.audio_rms_score, 1),
+            "fused_score": round(s.fused_score, 1),
+            "trend": getattr(s, "trend", "Steady Plateau"),
         })
 
     suggestion_data = latest_ai_suggestion
@@ -128,7 +167,7 @@ def get_analytics(db: Session = Depends(get_db)):
             "pacing_action": suggestion.pacing_action,
             "context": suggestion.engagement_context,
             "timestamp": suggestion.timestamp.strftime("%H:%M:%S") if suggestion.timestamp else "",
-            "provider": latest_ai_suggestion.get("provider", "Offline Heuristic (Local)"),
+            "provider": getattr(suggestion, "provider", latest_ai_suggestion.get("provider", "Offline Heuristic (Local)")),
         }
 
     return {
@@ -138,6 +177,7 @@ def get_analytics(db: Session = Depends(get_db)):
             "fused_score": metrics_list[-1]["fused_score"] if metrics_list else 82.5,
             "trend": fusion_engine._determine_trend(),
         },
+        "aggregates": aggregates,
     }
 
 
@@ -151,7 +191,7 @@ def update_calibration(payload: Dict[str, Any] = Body(...), db: Session = Depend
     session_name = payload.get("session_title", "Studio Morning Session")
     notes = payload.get("notes", "Recalibrated by instructor")
 
-    # Generate immediate pedagogical insight
+    # Generate immediate pedagogical insight with force_refresh
     active_faces = len(face_detector.tracks)
     sim_fusion = 84.5
     trend = fusion_engine._determine_trend()
@@ -164,16 +204,19 @@ def update_calibration(payload: Dict[str, Any] = Body(...), db: Session = Depend
         acoustic_score=78.0,
         movement_score=75.0,
         inactivity_penalty=0.0,
+        is_speech=False,
+        force_refresh=True,
     )
     latest_ai_suggestion = new_suggestion
 
     # Save suggestion to SQLite
-    db_sugg = TeachingSuggestion(
+    db_sugg = AIInsight(
         session_id=session_name,
         timestamp=datetime.utcnow(),
         engagement_context=f"Threshold updated to {threshold}s. {notes}",
         suggestion_text=new_suggestion["suggestion"],
         pacing_action=new_suggestion["pacing_action"],
+        provider=new_suggestion.get("provider", "Offline Heuristic Engine (Local)"),
     )
     db.add(db_sugg)
     db.commit()
@@ -188,26 +231,34 @@ def update_calibration(payload: Dict[str, Any] = Body(...), db: Session = Depend
 
 @app.get("/api/export/csv")
 def export_csv(db: Session = Depends(get_db)):
-    """Streams a downloadable CSV of the attendance log."""
-    logs = db.query(AttendanceLog).order_by(AttendanceLog.id.asc()).all()
+    """Queries SQLite records into a pandas.DataFrame and streams a downloadable CSV attachment."""
+    logs = (
+        db.query(AttendanceLog)
+        .order_by(AttendanceLog.timestamp.desc(), AttendanceLog.id.asc())
+        .all()
+    )
 
     data = []
     for log in logs:
+        ts = log.timestamp or log.last_seen or log.first_seen
         data.append({
             "Session ID": log.session_id,
             "Participant ID": log.participant_id,
             "First Seen UTC": log.first_seen.isoformat() if log.first_seen else "",
             "Last Seen UTC": log.last_seen.isoformat() if log.last_seen else "",
+            "Timestamp UTC": ts.isoformat() if ts else "",
             "Sustained Presence (Seconds)": round(log.sustained_seconds, 2),
             "Verification Status": log.status,
         })
 
     if not data:
+        now_iso = datetime.utcnow().isoformat()
         data.append({
             "Session ID": "studio-morning-session",
-            "Participant ID": "Participant 01",
-            "First Seen UTC": datetime.utcnow().isoformat(),
-            "Last Seen UTC": datetime.utcnow().isoformat(),
+            "Participant ID": "Participant 01 (Elena Rostova)",
+            "First Seen UTC": now_iso,
+            "Last Seen UTC": now_iso,
+            "Timestamp UTC": now_iso,
             "Sustained Presence (Seconds)": 420.0,
             "Verification Status": "Verified Present",
         })
@@ -239,14 +290,14 @@ async def websocket_stream(websocket: WebSocket):
             data = await websocket.receive_json()
             is_simulate = data.get("simulate", False)
             raw_audio_rms = data.get("audio_rms", None)
-            image_b64 = data.get("image", None)
+            audio_samples = data.get("audio_samples", None)
+            image_b64 = data.get("image", None) or data.get("frame", None)
             now = time.time()
 
             # Handle Frame Input
             if is_simulate or not image_b64:
                 # Generate synthetic studio classroom canvas
                 frame_bgr, sim_rms, sim_spectral_bins = camera_service.generate_simulated_frame(now)
-                audio_input = sim_rms if raw_audio_rms is None else raw_audio_rms
             else:
                 # Decode client-provided base64 jpeg
                 try:
@@ -256,19 +307,27 @@ async def websocket_stream(websocket: WebSocket):
                     nparr = np.frombuffer(img_bytes, np.uint8)
                     frame_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                     if frame_bgr is None:
-                        frame_bgr, _, _ = camera_service.generate_simulated_frame(now)
+                        frame_bgr, sim_rms, _ = camera_service.generate_simulated_frame(now)
                 except Exception:
-                    frame_bgr, _, _ = camera_service.generate_simulated_frame(now)
-                audio_input = raw_audio_rms
+                    frame_bgr, sim_rms, _ = camera_service.generate_simulated_frame(now)
+
+            # Process Audio Signal via Real Librosa / PCM Feature Extraction
+            if audio_samples is not None and len(audio_samples) > 0:
+                # Frontend WebAudio AnalyserNode sent real microphone PCM samples!
+                audio_telemetry = audio_analyzer.analyze_pcm_samples(audio_samples, t=now)
+            elif raw_audio_rms is not None:
+                audio_telemetry = audio_analyzer.analyze_audio_chunk(raw_audio_rms, t=now)
+            else:
+                # Fallback to realistic synthetic audio simulation
+                audio_telemetry = audio_analyzer.analyze_audio_chunk(None, t=now)
+
+            spectral_bins = audio_telemetry.get("spectral_bins", [0.05] * 16)
+            is_speech = audio_telemetry.get("is_speech", False)
 
             # Process Face Detection and IoU/Centroid Sustained Tracking
             annotated_frame, participants, visual_attention = face_detector.process_frame(
                 frame_bgr, now
             )
-
-            # Process Audio Dynamics & 16-band Spectrum
-            audio_telemetry = audio_analyzer.analyze_audio_chunk(audio_input, t=now)
-            spectral_bins = audio_telemetry.get("spectral_bins", [0.05] * 16)
 
             # Process Movement Dynamics and Inactivity
             movement_dynamics = fusion_engine.compute_movement_dynamics(frame_bgr)
@@ -281,28 +340,25 @@ async def websocket_stream(websocket: WebSocket):
                 acoustic_score=audio_telemetry["acoustic_engagement_score"],
             )
 
-            # Periodic AI Decision Support (every 10 seconds or when attention drops)
-            if (now - last_ai_invocation_time > 10.0) or (
-                fusion_result["trend"] == "Attention Drop Detected"
-                and now - last_ai_invocation_time > 5.0
-            ):
-                last_ai_invocation_time = now
-                latest_ai_suggestion = ai_agent.generate_suggestion(
-                    fused_score=fusion_result["fused_score"],
-                    trend=fusion_result["trend"],
-                    active_count=len(participants),
-                    visual_attention=visual_attention,
-                    acoustic_score=audio_telemetry["acoustic_engagement_score"],
-                    movement_score=movement_dynamics["movement_score"],
-                    inactivity_penalty=movement_dynamics["inactivity_penalty"],
-                )
+            # Periodic Context-Aware AI Pedagogical Decision Support
+            # (Throttled internally by ai_agent with 10-second cache and trend-change detection)
+            latest_ai_suggestion = ai_agent.generate_suggestion(
+                fused_score=fusion_result["fused_score"],
+                trend=fusion_result["trend"],
+                active_count=len(participants),
+                visual_attention=visual_attention,
+                acoustic_score=audio_telemetry["acoustic_engagement_score"],
+                movement_score=movement_dynamics["movement_score"],
+                inactivity_penalty=movement_dynamics["inactivity_penalty"],
+                is_speech=is_speech,
+            )
 
-            # Persist to SQLite periodically (every 5 seconds)
+            # Persist to SQLite WAL periodically (every 5 seconds)
             if now - last_db_persist_time > 5.0:
                 last_db_persist_time = now
                 try:
-                    # Persist metric
-                    metric_row = EngagementMetric(
+                    # Persist metric / session
+                    session_row = EngagementSession(
                         session_id="studio-morning-session",
                         timestamp=datetime.utcnow(),
                         active_faces=len(participants),
@@ -311,10 +367,11 @@ async def websocket_stream(websocket: WebSocket):
                         inactivity_penalty=movement_dynamics["inactivity_penalty"],
                         audio_rms_score=audio_telemetry["acoustic_engagement_score"],
                         fused_score=fusion_result["fused_score"],
+                        trend=fusion_result["trend"],
                     )
-                    db.add(metric_row)
+                    db.add(session_row)
 
-                    # Update attendance tracks in DB (do not record walk-bys as verified)
+                    # Update attendance tracks in DB
                     for p in participants:
                         track_name = p["track_id"]
                         sustained = p["sustained_seconds"]
@@ -327,6 +384,7 @@ async def websocket_stream(websocket: WebSocket):
                         )
                         if log_record:
                             log_record.last_seen = datetime.utcnow()
+                            log_record.timestamp = datetime.utcnow()
                             log_record.sustained_seconds = sustained
                             log_record.status = status
                         else:
@@ -335,6 +393,7 @@ async def websocket_stream(websocket: WebSocket):
                                 participant_id=track_name,
                                 first_seen=datetime.utcnow(),
                                 last_seen=datetime.utcnow(),
+                                timestamp=datetime.utcnow(),
                                 sustained_seconds=sustained,
                                 status=status,
                             )

@@ -147,10 +147,10 @@ export default function EditorialFooter() {
 
       </div>
 
-      {/* Giant Cropped Fraunces Wordmark at Very Bottom Edge */}
-      <div className="w-full overflow-hidden text-center leading-none select-none">
+      {/* Giant Grounded Fraunces Wordmark at Bottom */}
+      <div className="w-full text-center leading-none select-none pt-4 pb-10 md:pb-14">
         <h1
-          className="font-display font-bold tracking-tighter text-roast/80 hover:text-caramel/40 transition-colors duration-500 text-[14vw] md:text-[15.5vw] uppercase translate-y-[20%]"
+          className="font-display font-bold tracking-tighter text-roast/80 hover:text-caramel/40 transition-colors duration-500 text-[13.5vw] md:text-[15vw] uppercase translate-y-0"
           style={{ letterSpacing: '-0.05em' }}
         >
           ATELIER // PRESENCE

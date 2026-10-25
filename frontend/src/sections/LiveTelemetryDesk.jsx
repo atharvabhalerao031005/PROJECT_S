@@ -15,19 +15,33 @@ export default function LiveTelemetryDesk({ telemetry }) {
   const [activeTab, setActiveTab] = useState('optical-feed'); // 'optical-feed' | 'attendance-ledger' | 'pedagogy-agent'
   const [hoveredRowGlyph, setHoveredRowGlyph] = useState(null);
   const [sessionClock, setSessionClock] = useState('09:41:22.40');
+  const [showGuide, setShowGuide] = useState(() => {
+    try {
+      return localStorage.getItem('atelier_field_guide_seen') !== 'true';
+    } catch {
+      return true;
+    }
+  });
   const glyphRef = useRef(null);
 
   const {
     isConnected,
     isStreaming,
     isSimulating,
+    hasMic,
+    isMicMuted,
+    micRms,
     annotatedFrame,
     participants,
     metrics,
     aiSuggestion,
     startHardwareStream,
+    startWebcam,
     startSimulationStream,
+    stopHardware,
+    stopWebcam,
     stopStream,
+    toggleMicMute,
   } = telemetry;
 
   // Live micro-timestamp ticker
@@ -125,8 +139,35 @@ export default function LiveTelemetryDesk({ telemetry }) {
                 {isStreaming
                   ? isSimulating
                     ? 'SIMULATION'
-                    : 'HARDWARE LIVE'
+                    : 'HARDWARE WEBCAM'
                   : 'STANDBY'}
+              </span>
+            </div>
+
+            <div className="tactile-status-pill border-roast/70 bg-roast/40">
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  isStreaming
+                    ? isSimulating
+                      ? 'bg-latte'
+                      : hasMic
+                        ? isMicMuted
+                          ? 'bg-mocha/70'
+                          : 'bg-caramel animate-incandescent'
+                        : 'bg-mocha/70'
+                    : 'bg-mocha/70'
+                }`}
+              />
+              <span className="text-latte/80 font-medium font-mono text-[11px]">
+                {isStreaming
+                  ? isSimulating
+                    ? 'MIC: SYNTHETIC VAD'
+                    : hasMic
+                      ? isMicMuted
+                        ? 'MIC: MUTED'
+                        : `MIC: LIVE (${metrics.audio_db ? metrics.audio_db.toFixed(1) : '-'} dB)`
+                      : 'MIC: NOT DETECTED'
+                  : 'MIC: STANDBY'}
               </span>
             </div>
 
@@ -136,8 +177,9 @@ export default function LiveTelemetryDesk({ telemetry }) {
             </div>
 
             <div className="tactile-status-pill hidden md:inline-flex border-roast/70 bg-roast/40">
-              <span className="text-latte/70">AUDIO VAD:</span>
-              <span className="text-caramel font-semibold">16.0 kHz PCM</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-caramel' : 'bg-mocha/70'}`} />
+              <span className="text-latte/70">WS:</span>
+              <span className="text-caramel font-semibold">{isConnected ? 'ONLINE' : 'OFFLINE'}</span>
             </div>
 
             <div className="tactile-status-pill border-roast/70 bg-roast/40">
@@ -181,7 +223,80 @@ export default function LiveTelemetryDesk({ telemetry }) {
           >
             [C] Pedagogical Agent Notes
           </button>
+
+          <div className="ml-auto flex items-center">
+            <button
+              onClick={() => setShowGuide(!showGuide)}
+              className={`font-mono text-[11px] uppercase tracking-wider px-2.5 py-1 border transition-all cursor-pointer flex items-center space-x-1.5 ${
+                showGuide
+                  ? 'border-caramel text-caramel bg-caramel/15'
+                  : 'border-mocha/40 text-latte/70 hover:text-foam hover:border-mocha/70'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-caramel" />
+              <span>{showGuide ? 'Hide Field Manual ▲' : 'Open Field Manual ▼'}</span>
+            </button>
+          </div>
         </div>
+
+        {/* Studio Field Manual / Quick-Start Walkthrough */}
+        {showGuide && (
+          <div className="p-6 md:p-8 bg-roast/40 border border-caramel/40 relative shadow-2xl transition-all duration-300">
+            <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-roast/80 gap-3 mb-6">
+              <div className="flex items-center space-x-3">
+                <span className="w-2 h-2 rounded-full bg-caramel animate-incandescent" />
+                <span className="font-mono text-xs uppercase tracking-widest text-caramel font-semibold">
+                  ATELIER ORIENTATION // OPERATIONAL FIELD MANUAL
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setShowGuide(false);
+                  try {
+                    localStorage.setItem('atelier_field_guide_seen', 'true');
+                  } catch {}
+                }}
+                className="font-mono text-[10px] uppercase tracking-wider text-latte/70 hover:text-foam underline self-start md:self-auto cursor-pointer"
+              >
+                Dismiss Guide [×]
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-mono text-xs">
+              <div className="space-y-2 border-l-2 border-caramel/60 pl-4">
+                <span className="text-caramel font-bold block text-[11px] tracking-wider">01 / OPTICAL TELEMETRY</span>
+                <p className="font-sans text-xs text-crema/85 leading-relaxed font-normal">
+                  OpenCV Haar Cascade detects human faces, and a Euclidean Centroid Tracker assigns persistent IDs (Participant_01). Sustained attendance logs verify present at &ge;10s and auto-commit to SQLite.
+                </p>
+                <div className="text-[10px] text-latte/70 pt-1">
+                  • 10s Verification Threshold<br />
+                  • 3s Occlusion Grace Period
+                </div>
+              </div>
+
+              <div className="space-y-2 border-l-2 border-latte/60 pl-4">
+                <span className="text-latte font-bold block text-[11px] tracking-wider">02 / MULTIMODAL EQUILIBRIUM</span>
+                <p className="font-sans text-xs text-crema/85 leading-relaxed font-normal">
+                  MediaPipe yaw/pitch attention (100% frontal to 25% turned), optical frame differencing, and Librosa speech frequency formants (300Hz–3400Hz) fuse into the 0–100 equilibrium index.
+                </p>
+                <div className="text-[10px] text-latte/70 pt-1">
+                  • 16-Band Audio Spectrum<br />
+                  • Frame-Differencing Inactivity
+                </div>
+              </div>
+
+              <div className="space-y-2 border-l-2 border-mocha/80 pl-4">
+                <span className="text-foam font-bold block text-[11px] tracking-wider">03 / PRACTICAL TEST GUIDE</span>
+                <p className="font-sans text-xs text-crema/85 leading-relaxed font-normal">
+                  Click <strong>Initialize Local Camera &amp; Mic</strong> to stream your webcam. Watch Participant_01 verify, speak to drive the 16-band equalizer, or test <strong>Simulate Classroom Feed</strong> for synthetic cohorts.
+                </p>
+                <div className="text-[10px] text-caramel pt-1 font-semibold">
+                  • Zero Cloud Storage • Local SQLite WAL
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* TAB 1: Live Optical & Acoustic Stream */}
         {activeTab === 'optical-feed' && (
@@ -232,13 +347,33 @@ export default function LiveTelemetryDesk({ telemetry }) {
                   </div>
 
                   {/* Overlaid Darkroom Telemetry Badges */}
-                  <div className="absolute top-3 left-10 flex items-center space-x-2">
+                  <div className="absolute top-3 left-10 flex flex-wrap items-center gap-2">
                     <span className="font-mono text-[9px] text-latte bg-espresso/90 px-2.5 py-0.5 border border-mocha/50 backdrop-blur-sm font-medium">
                       {isSimulating ? 'SYNTHETIC CLASSROOM SIMULATION' : 'OPENCV 4.9 // HAAR FRONTAL'}
                     </span>
                     <span className="font-mono text-[9px] text-caramel bg-espresso/90 px-2 py-0.5 border border-mocha/50 font-semibold">
                       {isStreaming ? 'REC ●' : 'IDLE ○'}
                     </span>
+                    {isStreaming && hasMic && !isSimulating && (
+                      <span className={`font-mono text-[9px] px-2 py-0.5 border border-mocha/50 backdrop-blur-sm flex items-center space-x-1.5 ${
+                        isMicMuted
+                          ? 'bg-roast/90 text-latte/70'
+                          : metrics.is_speech_active
+                            ? 'bg-caramel text-espresso font-bold'
+                            : 'bg-espresso/90 text-caramel'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          isMicMuted ? 'bg-mocha/70' : metrics.is_speech_active ? 'bg-espresso' : 'bg-caramel animate-incandescent'
+                        }`} />
+                        <span>
+                          {isMicMuted
+                            ? 'MIC MUTED'
+                            : metrics.is_speech_active
+                              ? `VOICE ACTIVE (${metrics.audio_db} dB)`
+                              : `MIC LIVE (${metrics.audio_db} dB)`}
+                        </span>
+                      </span>
+                    )}
                   </div>
 
                   {/* Bottom Viewfinder Meta Strip */}
@@ -252,14 +387,15 @@ export default function LiveTelemetryDesk({ telemetry }) {
                 </div>
 
                 {/* Inline Action Controls (Zero Popups) */}
-                <div className="flex flex-wrap items-center gap-4 pt-2">
+                <div className="flex flex-wrap items-center gap-3 pt-2">
                   {!isStreaming ? (
                     <>
                       <button
                         onClick={startHardwareStream}
-                        className="px-6 py-3 border border-caramel bg-caramel text-espresso font-mono text-xs uppercase tracking-widest font-semibold hover:bg-foam hover:border-foam transition-colors cursor-pointer shadow-md"
+                        className="px-6 py-3 border border-caramel bg-caramel text-espresso font-mono text-xs uppercase tracking-widest font-semibold hover:bg-foam hover:border-foam transition-colors cursor-pointer shadow-md flex items-center space-x-2"
                       >
-                        Initialize Local Camera &amp; Mic
+                        <GazeEyeGlyph className="w-4 h-4" stroke="#221610" />
+                        <span>Initialize Local Camera &amp; Mic</span>
                       </button>
 
                       <button
@@ -277,6 +413,22 @@ export default function LiveTelemetryDesk({ telemetry }) {
                       >
                         Terminate Telemetry Feed
                       </button>
+
+                      {/* Tactile Microphone Mute / Unmute Button for Live Hardware */}
+                      {hasMic && !isSimulating && (
+                        <button
+                          onClick={toggleMicMute}
+                          className={`px-5 py-3 border font-mono text-xs uppercase tracking-widest transition-colors cursor-pointer font-medium flex items-center space-x-2 ${
+                            isMicMuted
+                              ? 'border-caramel bg-caramel/20 text-caramel hover:bg-caramel/30'
+                              : 'border-mocha/60 bg-espresso text-latte hover:border-caramel hover:text-caramel'
+                          }`}
+                          title={isMicMuted ? 'Unmute microphone' : 'Mute microphone'}
+                        >
+                          <AcousticWaveGlyph className="w-4 h-4" stroke={isMicMuted ? '#B8772F' : '#D2AE82'} />
+                          <span>{isMicMuted ? 'Unmute Mic' : 'Mute Mic'}</span>
+                        </button>
+                      )}
 
                       <button
                         onClick={isSimulating ? startHardwareStream : startSimulationStream}
@@ -348,8 +500,12 @@ export default function LiveTelemetryDesk({ telemetry }) {
                   <div className="flex items-baseline justify-between group">
                     <span className="text-crema">Acoustic Interaction (RMS)</span>
                     <span className="dotted-leader" />
-                    <span className="font-mono text-sm text-foam">
-                      {metrics.audio_db ? `${metrics.audio_db.toFixed(1)} dB` : '-18.4 dB'}
+                    <span className="font-mono text-sm text-foam flex items-center space-x-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${metrics.is_speech_active ? 'bg-caramel animate-incandescent' : 'bg-mocha/70'}`} />
+                      <span>{metrics.audio_db ? `${metrics.audio_db.toFixed(1)} dB` : '-18.4 dB'}</span>
+                      {hasMic && !isSimulating && isMicMuted && (
+                        <span className="text-[10px] text-caramel/80 uppercase font-mono">[MUTED]</span>
+                      )}
                     </span>
                   </div>
 
@@ -396,6 +552,17 @@ export default function LiveTelemetryDesk({ telemetry }) {
                 audioDb={metrics.audio_db}
                 isSpeechActive={metrics.is_speech_active}
                 isStreaming={isStreaming}
+                sourceLabel={
+                  isStreaming
+                    ? isSimulating
+                      ? '16-BAND PARALLEL NYQUIST FILTER BANK • SYNTHETIC CLASSROOM AMBIENCE'
+                      : hasMic
+                        ? isMicMuted
+                          ? '16-BAND PARALLEL NYQUIST FILTER BANK • LOCAL MICROPHONE [MUTED]'
+                          : '16-BAND PARALLEL NYQUIST FILTER BANK • WEBAUDIO ANALYSER (PCM 16k LIVE)'
+                        : '16-BAND PARALLEL NYQUIST FILTER BANK • WEBAUDIO MIC INACTIVE'
+                    : '16-BAND PARALLEL NYQUIST FILTER BANK • 16.0 kHz PCM BUFFER • STANDBY'
+                }
               />
             </div>
           </div>
@@ -423,7 +590,7 @@ export default function LiveTelemetryDesk({ telemetry }) {
               {/* Roster Rows with Fraunces serif names, baseline-aligned dotted leaders, and hover effects */}
               <div className="divide-y divide-roast/60">
                 {participants.map((p, idx) => {
-                  const isVerified = p.status === 'Verified Present';
+                  const isVerified = p.is_verified || (typeof p.status === 'string' && p.status.startsWith('Verified Present'));
                   const glyphType = isVerified ? 'seal' : 'eye';
                   const arrivalStamp = `09:${10 + idx * 2}:${String(14 + idx * 7).padStart(2, '0')} UTC`;
 

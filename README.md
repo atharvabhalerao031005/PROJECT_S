@@ -3,7 +3,13 @@
 
 > *An analog study journal from an architectural studio crossed with a warm 35mm film still.*
 
-An architectural multimodal attendance and classroom cognitive telemetry platform engineered with FastAPI, OpenCV Haar Cascades, temporal sustained presence tracking, Librosa audio signal processing, SQLite WAL persistence, and context-aware pedagogical pacing insights—orchestrated within an Awwwards-caliber editorial interface.
+An architectural multimodal attendance and classroom cognitive telemetry platform engineered with **FastAPI**, **OpenCV Haar Cascades**, **Euclidean Centroid Tracking**, **MediaPipe / OpenCV Head Pose Estimation**, **Librosa Audio Signal Processing**, **SQLite WAL persistence**, and **context-aware pedagogical pacing insights**—orchestrated within an Awwwards-caliber editorial interface.
+
+[![Python 3.11](https://img.shields.io/badge/python-3.11-3A2619.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-B8772F.svg)](https://fastapi.tiangolo.com/)
+[![React 18](https://img.shields.io/badge/React-18-6B4630.svg)](https://react.dev/)
+[![GSAP 3](https://img.shields.io/badge/GSAP-3-D2AE82.svg)](https://greensock.com/gsap/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-1C1310.svg)](LICENSE)
 
 ---
 
@@ -17,12 +23,12 @@ multimodal-attendance-agent/
 │   ├── .env.example                # GROQ_API_KEY, GEMINI_API_KEY (optional)
 │   ├── core/
 │   │   ├── camera_service.py       # Camera manager + synthetic studio classroom simulation
-│   │   ├── face_detection.py       # OpenCV Haar Cascade + IoU/Centroid sustained presence
-│   │   ├── audio_analysis.py       # Librosa + SoundFile/NumPy RMS energy & spectral centroid
-│   │   ├── engagement_fusion.py    # Visual + Movement + Audio multimodal fusion engine
-│   │   └── ai_agent.py             # Groq / Gemini + 100% offline heuristic pedagogical agent
+│   │   ├── face_detection.py       # OpenCV Haar Cascade + Euclidean Centroid Tracker + Sustained Presence
+│   │   ├── audio_analysis.py       # Librosa + NumPy RMS energy, dBFS & spectral centroid
+│   │   ├── engagement_fusion.py    # MediaPipe Head Pose + Optical Frame Diff + EMA Multimodal Fusion
+│   │   └── ai_agent.py             # Groq / Gemini 3.5 Flash + Deterministic 6-State Offline Matrix
 │   └── database/
-│       └── models.py               # SQLAlchemy SQLite models (AttendanceLog, EngagementMetric)
+│       └── models.py               # SQLAlchemy SQLite models with WAL mode (AttendanceLog, EngagementSession)
 ├── frontend/
 │   ├── index.html                  # Editorial typography (Fraunces, Instrument Sans, JetBrains Mono)
 │   ├── package.json                # React 18, Vite, Tailwind CSS, GSAP 3, Lenis
@@ -33,12 +39,14 @@ multimodal-attendance-agent/
 │       ├── App.jsx                 # Lenis + GSAP ScrollTrigger master orchestration
 │       ├── index.css               # Film grain filter, custom cursor, fluid type scale
 │       ├── hooks/
-│       │   ├── useTelemetrySocket.js # WebSocket client + WebRTC webcam/mic capture
+│       │   ├── useTelemetrySocket.js # WebSocket client + WebRTC webcam + WebAudio microphone PCM
 │       │   └── useMagnetic.js        # GSAP quickTo magnetic button physics
 │       ├── components/
 │       │   ├── CustomCursor.jsx    # Caramel dot + lagging ring
 │       │   ├── GrainOverlay.jsx    # Inline SVG feTurbulence 5.5% opacity overlay
-│       │   ├── Navbar.jsx          # Hide-on-scroll-down thin editorial nav
+│       │   ├── Navbar.jsx          # Dual-theme sticky nav with instant top-hover drop & pin toggle
+│       │   ├── AnalogSpectrumVisualizer.jsx # 16-band vintage studio equalizer
+│       │   ├── AnalogDialGauge.jsx # Second-order galvanometer needle meters
 │       │   └── svgs/
 │       │       ├── HeroParallaxScene.jsx  # 6-layer hand-crafted SVG studio desk scene
 │       │       ├── PipelineStepSVGs.jsx   # 4 morphing SVGs for "The Signal Pour"
@@ -48,10 +56,17 @@ multimodal-attendance-agent/
 │           ├── HeroSection.jsx            # Section 1: 6-Layer Parallax + Fluid Headline
 │           ├── StoryPhilosophy.jsx        # Section 2: Pinned Italic Manifesto + Rotating Stamp
 │           ├── TheSignalPour.jsx          # Section 3: 300vh Pinned 4-Stage Multimodal Pipeline
-│           ├── LiveTelemetryDesk.jsx      # Section 4: Inline Live Webcam/Audio Canvas + Ledger
-│           ├── EngagementGallery.jsx      # Section 5: Horizontal Pinned Collage of Session Trends
-│           ├── InlineConfigAndLogs.jsx    # Section 6: Typographic Schedule + Inline Form + SVG Map
-│           └── EditorialFooter.jsx        # Section 7: Cropped Giant Wordmark + Rising Steam SVG
+│           ├── LiveTelemetryDesk.jsx      # Section 4: Live Webcam/Audio Canvas + Field Manual + Ledger
+│           ├── EngagementGallery.jsx      # Section 5: Horizontal Pinned Session Trends (0px dead space)
+│           ├── InlineConfigAndLogs.jsx    # Section 6: Typographic Schedule + Inline Form + SQLite Sync
+│           └── EditorialFooter.jsx        # Section 7: Uncropped Grounded Wordmark + Rising Steam SVG
+├── test_system_full.py             # Complete End-to-End Automated Verification Suite
+├── test_cv_and_motion_deep.py      # Deep CV Centroid & Motion Differencing Verification
+├── run_app.bat                     # One-click Windows Production & Dev Launcher
+├── run_app.sh                      # One-click Unix/macOS Launcher
+├── Dockerfile                      # Multi-stage production container build
+├── docker-compose.yml              # Single-command container deployment
+├── ARCHITECTURE.md                 # Deep Mathematical & Architectural Specification
 └── README.md
 ```
 
@@ -72,69 +87,108 @@ Strictly rejects cyberpunk dashboards, blue gradients, glassmorphism, or generic
 | `--foam` | `#F7F0E3` | Primary editorial paper background |
 
 ### Typography Scale
-- **Display Serif (`font-display`):** `Fraunces, serif` (optical size 72–144, italic accents).
-- **Body Sans (`font-sans`):** `Instrument Sans, sans-serif` (16–18px, 1.6 line height).
-- **Telemetry Mono (`font-mono`):** `JetBrains Mono, monospace` (coordinates, dB, and leader metrics).
+* **Display Serif (`font-display`):** `Fraunces, serif` (optical size 72–144, italic accents, zero swash cropping).
+* **Body Sans (`font-sans`):** `Instrument Sans, sans-serif` (16–18px, 1.6 line height).
+* **Telemetry Mono (`font-mono`):** `JetBrains Mono, monospace` (coordinates, dB, and leader metrics).
 
 ---
 
 ## 3. Mathematical Telemetry & Multimodal Fusion
 
-### 3.1 Sustained Temporal Presence (Anti-False-Positive Filter)
-Single-frame detections (such as hallway walk-bys or doorway glances) are rejected until tracking duration satisfies:
-$$\text{Duration}(T_i) = \sum_{k=1}^{N} \Delta t_k \ge \Theta_{\text{sustained}} \quad (\text{Default } \Theta = 10.0\text{ s})$$
+### 3.1 Multi-Face Euclidean Centroid Tracking
+Incoming bounding boxes are converted to centroids $(cX, cY)$. Bipartite matching with distance gating ($D_{\max} = 140\text{px}$) assigns persistent participant IDs (`Participant_01`, `Participant_02`, etc.) with a **3.0-second occlusion grace period**.
 
-### 3.2 Multimodal Cognitive Equilibrium Formula
-The fused engagement metric integrates visual orientation, physical posture motion, and acoustic energy:
-$$\text{Fused Score} = 0.45(\text{Visual Attention}) + 0.25(\text{Movement Dynamics}) + 0.30(\text{Acoustic Interaction}) - \text{Inactivity Penalty}$$
-- **Visual Attention ($0.45$):** Evaluated from Haar Cascade face aspect-ratio symmetry and bounding-box stability.
-- **Movement Dynamics ($0.25$):** Gaussian blurred frame differencing ($\text{mean}(|I_t - I_{t-1}|)$) rewarding subtle organic human motion.
-- **Acoustic Interaction ($0.30$):** Librosa spectral centroid and RMS decibel energy within human vocal bands ($-32\text{ dB}$ to $-12\text{ dB}$).
-- **Inactivity Penalty:** Progressive penalty applied when stillness exceeds 15 consecutive cycles (cognitive fatigue/zoning out).
+### 3.2 Sustained Temporal Presence Verification
+Single-frame detections (e.g. hallway walk-bys) are rejected until tracking duration satisfies:
+$$\text{Duration}(T_i) \ge \Theta_{\text{sustained}} \quad (\text{Default } \Theta = 10.0\text{ s})$$
+Verified participants are automatically committed to the local SQLite database.
+
+### 3.3 Head Pose Attention Angle & Cosine Decay
+Calculates yaw $\theta_y$ and pitch $\theta_p$ via MediaPipe FaceMesh / OpenCV geometric fallback. Attention decays via cosine interpolation:
+* $100\%$ when looking forward ($|\theta| \le 15^\circ$)
+* Smooth decay between $15^\circ$ and $45^\circ$
+* $25\%$ when turned sideways ($> 45^\circ$) or looking away
+
+### 3.4 Optical Motion Differencing & Inactivity Engine
+Computes frame differencing on standardized $64 \times 64$ face ROIs:
+$$\Delta I = |I_t - I_{t-1}|$$
+If optical motion remains below threshold for continuous duration $> 8.0\text{s}$, a progressive inactivity penalty (up to 25.0 points) is applied.
+
+### 3.5 Librosa Audio Signal Processing
+Extracts real RMS energy, dBFS, and spectral centroid from incoming WebAudio microphone float arrays:
+$$\text{is\_speech} = (300\text{ Hz} \le \text{Centroid} \le 3400\text{ Hz}) \land (\text{dBFS} > -42.0\text{ dBFS})$$
+FFT magnitude buckets power a 16-band analog spectrum equalizer.
+
+### 3.6 Multimodal Cognitive Equilibrium Formula & EMA Smoothing
+$$\text{Fused Score} = 0.45(\text{Visual Attention}) + 0.35(\text{Movement Dynamics}) + 0.20(\text{Acoustic Interaction}) - \text{Inactivity Penalty}$$
+Smoothed with an Exponential Moving Average ($\alpha = 0.25$) and classified into rolling trends (*Interactive Peak*, *Steady Classroom Rhythm*, *Attention Drop Detected*, *Reflective Silence*).
 
 ---
 
-## 4. Quick Start (Running Backend & Frontend)
+## 4. Quick Start (Running Locally)
 
-### Prerequisites
-- Python 3.10+
-- Node.js 18+
+### Option A: One-Click Launcher (Windows)
+Double-click `run_app.bat` or run:
+```powershell
+.\run_app.bat
+```
+*Automatically creates/activates Python `.venv`, builds the Vite frontend bundle, and launches Uvicorn on `http://localhost:8000` with the browser opened automatically.*
 
-### Step 1: Start the Backend (FastAPI + OpenCV)
+### Option B: Docker Container Deployment
+Run via Docker Compose:
 ```bash
+docker compose up --build
+```
+*Access the unified application at `http://localhost:8000`.*
+
+### Option C: Manual Development Mode
+```bash
+# Terminal 1: Backend
 cd backend
 python app.py
-```
-*The backend starts at `http://localhost:8000` with SQLite WAL database auto-initialized.*
 
-### Step 2: Start the Frontend (Vite + GSAP + Lenis)
-```bash
+# Terminal 2: Frontend (Hot-Reload)
 cd frontend
 npm run dev
 ```
-*Open `http://localhost:5173` in your browser.*
 
 ---
 
-## 5. Evaluation & Testing Features
+## 5. Practical Testing & Operation Walkthrough
 
-1. **Simulate Classroom Feed (Zero Hardware Required):**
-   - Click the **"Simulate Classroom Feed"** button inline inside the Live Telemetry Desk.
-   - The backend immediately generates a synthetic studio classroom scene with 3 animated students, running live Haar Cascade detection, corner bracket overlays, 10-second sustained tracking progress, and synthetic audio RMS fluctuations.
-2. **Real Hardware Mode:**
-   - Click **"Initialize Local Camera & Mic"** to stream your real hardware webcam and microphone through the WebSocket.
-3. **Attendance Ledger:**
-   - Switch to tab `[B] Attendance Ledger` to view individual participants with Fraunces serif typography, dotted leaders, and floating cursor glyphs.
-4. **Pedagogical Agent Stream:**
-   - Switch to tab `[C] Pedagogical Agent Notes` to read real-time teaching suggestions tilted at `-1.2deg`.
-5. **Inline Calibration & CSV Export:**
-   - Scroll to Section 6 to adjust the sustained presence slider in real-time or click **"Export Attendance Ledger (.CSV)"** to stream SQLite logs.
+1. **Orientation Field Manual**:
+   - In Section 4 (*Live Telemetry Desk*), click `[?] Open Field Manual` to review the interactive 3-step guide on optical telemetry, multimodal fusion, and practical testing.
+2. **Testing Live Hardware (Webcam + Microphone)**:
+   - Click **"Initialize Local Camera & Mic"**.
+   - Allow browser camera and microphone permissions.
+   - Watch your face lock into `Participant_01 (Verifying...)`.
+   - Maintain focus for 10 seconds: the badge turns caramel and marks you `Verified Present (>=10s)`.
+   - Turn your head sideways: watch the left Galvanometer gauge dip from 95% to 35%.
+   - Speak into your mic: watch the 16-band analog equalizer respond in real-time.
+3. **Testing Without Hardware (Synthetic Simulation)**:
+   - Click **"Simulate Classroom Feed"**.
+   - Generates a synthetic studio classroom scene with 3 animated students displaying organic note-taking posture shifts, peer debate, and walk-by rejection.
+4. **Attendance Ledger & CSV Export**:
+   - Switch to tab `[B] Attendance Ledger` to inspect verified attendees.
+   - Click **"Export Attendance Ledger (.CSV)"** in Section 6 to download live SQLite records via streaming Pandas export.
 
 ---
 
-## 6. Architecture & Editorial Quality Standards
+## 6. End-to-End Verification Test Suites
 
-- [x] **Zero External Icon Libraries:** 100% custom-drawn inline SVGs (`HeroParallaxScene`, `PipelineStepSVGs`, `TelemetryGlyphs`, `CampusMapSVG`).
-- [x] **Zero Overlays / Zero Popups:** Every view transition, threshold adjustment, and video stream is rendered strictly inline.
-- [x] **Disciplined Visual Chemistry:** Strictly uses `--espresso`, `--roast`, `--mocha`, `--caramel`, `--latte`, `--crema`, `--foam`.
-- [x] **100% Offline Capability:** Runs completely offline with deterministic pedagogical heuristic engines when no API keys are present.
+Run the full automated test suite:
+```bash
+python test_system_full.py
+```
+Run the deep computer vision and motion test suite:
+```bash
+python test_cv_and_motion_deep.py
+```
+
+All 6 core modules pass with 100% verification:
+* `[PASS]` SQLite WAL Mode & Relational Schema
+* `[PASS]` Librosa Audio Signal Processing & 16-Band Spectral Analysis
+* `[PASS]` Computer Vision Centroid Tracker & Sustained Presence
+* `[PASS]` Multimodal Cognitive Equilibrium Formula
+* `[PASS]` Dynamic AI Agent with 10s Throttling Cache & Rate Protection
+* `[PASS]` FastAPI REST Endpoints, Pandas CSV Export & WebSockets

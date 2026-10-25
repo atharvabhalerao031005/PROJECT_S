@@ -2,12 +2,17 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
  * useTelemetrySocket Hook
- * Coordinates WebSocket communication, WebRTC hardware webcam/mic, and synthetic simulation
+ * Coordinates WebSocket communication, WebRTC hardware webcam/mic, and synthetic simulation.
+ * Includes WebAudio AnalyserNode pipeline for real-time PCM sample extraction, RMS computation,
+ * and graceful fallback.
  */
 export function useTelemetrySocket() {
   const [isConnected, setIsConnected] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [hasMic, setHasMic] = useState(false);
+  const [isMicMuted, setIsMicMuted] = useState(false);
+  const [micRms, setMicRms] = useState(0.015);
   const [annotatedFrame, setAnnotatedFrame] = useState(null);
   const [participants, setParticipants] = useState([
     { track_id: "Participant 01", sustained_seconds: 420.5, status: "Verified Present", head_pose_score: 92.4, bbox: [120, 90, 110, 130] },
@@ -39,7 +44,9 @@ export function useTelemetrySocket() {
   const canvasElemRef = useRef(null);
   const audioContextRef = useRef(null);
   const audioAnalyserRef = useRef(null);
-  const audioRmsRef = useRef(0.02);
+  const audioSourceRef = useRef(null);
+  const isMicMutedRef = useRef(false);
+  const audioRmsRef = useRef(0.015);
   const intervalRef = useRef(null);
 
   // Initialize hidden video and canvas for frame capture
@@ -138,26 +145,34 @@ export function useTelemetrySocket() {
 
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const frameBase64 = canvas.toDataURL('image/jpeg', 0.75);
+    const frameBase64 = canvas.toDataURL('image/jpeg', 0.65);
 
-    // Read mic RMS & 16-bin frequency spectrum
-    let currentRms = audioRmsRef.current;
-    if (audioAnalyserRef.current) {
-      const dataArray = new Uint8Array(audioAnalyserRef.current.fftSize);
-      audioAnalyserRef.current.getByteTimeDomainData(dataArray);
+    // Extract time-domain PCM float samples & calculate real RMS
+    let timeData = new Float32Array(512);
+    let rms = 0.015;
+    let extractedBins = null;
+
+    if (audioAnalyserRef.current && !isMicMutedRef.current) {
+      const analyser = audioAnalyserRef.current;
+      timeData = new Float32Array(analyser.fftSize);
+      analyser.getFloatTimeDomainData(timeData);
+
       let sum = 0;
-      for (let i = 0; i < dataArray.length; i++) {
-        const val = (dataArray[i] - 128) / 128;
-        sum += val * val;
+      for (let i = 0; i < timeData.length; i++) {
+        sum += timeData[i] * timeData[i];
       }
-      currentRms = Math.sqrt(sum / dataArray.length);
+      rms = Math.sqrt(sum / timeData.length);
+      if (isNaN(rms)) rms = 0.001;
 
-      // Compute 16 frequency bands (focusing on 20Hz - 12kHz range)
-      const freqArray = new Uint8Array(audioAnalyserRef.current.frequencyBinCount);
-      audioAnalyserRef.current.getByteFrequencyData(freqArray);
+      audioRmsRef.current = rms;
+      setMicRms(rms);
+
+      // Compute 16 frequency bands for zero-latency local spectrum responsiveness
+      const freqArray = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(freqArray);
       const binCount = 16;
-      const binWidth = Math.max(1, Math.floor((freqArray.length * 0.65) / binCount));
-      const extractedBins = [];
+      const binWidth = Math.max(1, Math.floor((freqArray.length * 0.7) / binCount));
+      extractedBins = [];
       for (let b = 0; b < binCount; b++) {
         let bSum = 0;
         for (let j = 0; j < binWidth; j++) {
@@ -165,18 +180,63 @@ export function useTelemetrySocket() {
         }
         extractedBins.push(Number(Math.max(0.04, bSum / (binWidth * 255)).toFixed(3)));
       }
-      setMetrics((prev) => ({
-        ...prev,
-        spectral_bins: extractedBins,
-      }));
+    } else {
+      // Muted or no audio track
+      rms = 0.005;
+      audioRmsRef.current = rms;
+      setMicRms(rms);
     }
 
+    // Local state immediate refresh for instant feedback
+    const dbVal = rms > 1e-5 ? Math.max(-60, 20 * Math.log10(rms)) : -60;
+    setMetrics((prev) => ({
+      ...prev,
+      audio_db: Number(dbVal.toFixed(1)),
+      is_speech_active: dbVal > -38,
+      ...(extractedBins && extractedBins.length === 16 ? { spectral_bins: extractedBins } : {}),
+    }));
+
+    // Send payload to WebSocket /ws/stream adhering strictly to contract
     wsRef.current.send(JSON.stringify({
-      simulate: false,
+      frame: frameBase64,
       image: frameBase64,
-      audio_rms: currentRms,
+      audio_samples: Array.from(timeData.slice(0, 128)),
+      mic_rms: rms,
+      audio_rms: rms,
+      simulate: false,
     }));
   }, [isSimulating]);
+
+  const stopHardware = useCallback(() => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+    if (audioSourceRef.current) {
+      try {
+        audioSourceRef.current.disconnect();
+      } catch (e) {}
+      audioSourceRef.current = null;
+    }
+    if (audioAnalyserRef.current) {
+      try {
+        audioAnalyserRef.current.disconnect();
+      } catch (e) {}
+      audioAnalyserRef.current = null;
+    }
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.close().catch(() => {});
+      } catch (e) {}
+      audioContextRef.current = null;
+    }
+    if (videoElemRef.current) {
+      videoElemRef.current.srcObject = null;
+    }
+    setHasMic(false);
+    setIsMicMuted(false);
+    isMicMutedRef.current = false;
+  }, []);
 
   const startSimulationStream = useCallback(() => {
     setIsSimulating(true);
@@ -190,59 +250,99 @@ export function useTelemetrySocket() {
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ simulate: true }));
       }
-    }, 120); // ~8-10 fps for telemetry stream
-  }, [connectWebSocket]);
+    }, 150); // ~6-7 fps for simulated telemetry stream
+  }, [connectWebSocket, stopHardware]);
 
-  const startHardwareStream = useCallback(async () => {
+  const startWebcam = useCallback(async () => {
     setIsSimulating(false);
+    stopHardware();
+
+    let stream = null;
+    let micActive = false;
+
+    // 1. Request video with ideal dimensions and real microphone audio
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 },
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 } },
         audio: true,
       });
-      mediaStreamRef.current = stream;
-
-      if (videoElemRef.current) {
-        videoElemRef.current.srcObject = stream;
-        videoElemRef.current.play();
+      micActive = true;
+    } catch (avErr) {
+      console.warn("Audio+Video getUserMedia failed, attempting video-only fallback:", avErr);
+      // 2. Graceful fallback if audio permission is denied or no mic is present
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: false,
+        });
+        micActive = false;
+      } catch (vErr) {
+        console.warn("Hardware camera unavailable or denied, falling back to simulation:", vErr);
+        startSimulationStream();
+        return;
       }
-
-      // Audio setup
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioCtx.createMediaStreamSource(stream);
-      const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 512;
-      source.connect(analyser);
-
-      audioContextRef.current = audioCtx;
-      audioAnalyserRef.current = analyser;
-
-      setIsStreaming(true);
-      connectWebSocket();
-
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      intervalRef.current = setInterval(captureAndSend, 120);
-    } catch (err) {
-      // If hardware permissions are denied, fallback seamlessly to simulation mode
-      startSimulationStream();
     }
-  }, [connectWebSocket, captureAndSend, startSimulationStream]);
 
-  const stopHardware = useCallback(() => {
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-      mediaStreamRef.current = null;
-    }
-    if (audioContextRef.current) {
-      audioContextRef.current.close().catch(() => {});
-      audioContextRef.current = null;
-    }
+    mediaStreamRef.current = stream;
+    setHasMic(micActive);
+    setIsMicMuted(false);
+    isMicMutedRef.current = false;
+
     if (videoElemRef.current) {
-      videoElemRef.current.srcObject = null;
+      videoElemRef.current.srcObject = stream;
+      try {
+        await videoElemRef.current.play();
+      } catch (pErr) {
+        console.warn("Video element play error:", pErr);
+      }
     }
+
+    // Initialize Web AudioContext & AnalyserNode
+    if (micActive) {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioCtx();
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+        analyser.smoothingTimeConstant = 0.35;
+
+        const source = audioCtx.createMediaStreamSource(stream);
+        source.connect(analyser);
+
+        audioContextRef.current = audioCtx;
+        audioAnalyserRef.current = analyser;
+        audioSourceRef.current = source;
+
+        if (audioCtx.state === 'suspended') {
+          await audioCtx.resume();
+        }
+      } catch (audioErr) {
+        console.warn("WebAudio initialization error:", audioErr);
+        setHasMic(false);
+      }
+    }
+
+    setIsStreaming(true);
+    connectWebSocket();
+
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(captureAndSend, 160);
+  }, [connectWebSocket, captureAndSend, startSimulationStream, stopHardware]);
+
+  const toggleMicMute = useCallback(() => {
+    setIsMicMuted((prev) => {
+      const next = !prev;
+      isMicMutedRef.current = next;
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getAudioTracks().forEach((track) => {
+          track.enabled = !next;
+        });
+      }
+      return next;
+    });
   }, []);
 
-  const stopStream = useCallback(() => {
+  const stopWebcam = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -266,12 +366,18 @@ export function useTelemetrySocket() {
     isConnected,
     isStreaming,
     isSimulating,
+    hasMic,
+    isMicMuted,
+    micRms,
     annotatedFrame,
     participants,
     metrics,
     aiSuggestion,
-    startHardwareStream,
+    startWebcam,
+    startHardwareStream: startWebcam,
     startSimulationStream,
-    stopStream,
+    stopWebcam,
+    stopStream: stopWebcam,
+    toggleMicMute,
   };
 }

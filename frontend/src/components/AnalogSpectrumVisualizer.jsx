@@ -26,6 +26,7 @@ export default function AnalogSpectrumVisualizer({
   audioDb = -18.4,
   isSpeechActive = false,
   isStreaming = true,
+  sourceLabel = '16-BAND PARALLEL NYQUIST FILTER BANK • 16.0 kHz PCM BUFFER • BALLISTIC DAMPED',
 }) {
   const [hoveredBand, setHoveredBand] = useState(null);
   const [meterMode, setMeterMode] = useState('VU'); // 'VU' | 'PEAK' | 'TAPE'
@@ -176,8 +177,8 @@ export default function AnalogSpectrumVisualizer({
               </span>
             </div>
           </div>
-          <span className="font-mono text-[9px] sm:text-[10px] text-mocha tracking-wider block">
-            16-BAND PARALLEL NYQUIST FILTER BANK • 16.0 kHz PCM BUFFER • BALLISTIC DAMPED
+          <span className="font-mono text-[9px] sm:text-[10px] text-latte/75 tracking-wider block">
+            {sourceLabel}
           </span>
         </div>
 

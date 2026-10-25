@@ -100,7 +100,7 @@ export default function EngagementGallery() {
     <section
       id="gallery"
       ref={containerRef}
-      className="relative min-h-[300vh] bg-espresso text-foam overflow-hidden select-none"
+      className="relative w-full overflow-hidden bg-espresso text-foam select-none"
       style={{ backgroundColor: 'var(--espresso)', color: 'var(--foam)' }}
     >
       <div className="h-screen w-full flex flex-col justify-between py-12 px-6 lg:px-12">

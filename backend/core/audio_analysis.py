@@ -14,13 +14,13 @@ except ImportError:
 class AudioAnalyzer:
     """Extracts acoustic telemetry, voice activity detection, and 16-band spectral frequency bins."""
 
-    # 16 Logarithmic frequency band boundaries from 60 Hz to 8000 Hz
+    # 16 Logarithmic frequency band boundaries from 60 Hz to 9500 Hz
     FREQ_BANDS = [
         (60, 95),       # Bin 0:  Sub-bass / HVAC floor
         (95, 140),      # Bin 1:  Bass resonance
         (140, 210),     # Bin 2:  Male voice fundamental (F0)
         (210, 310),     # Bin 3:  Female voice fundamental / Low warmth
-        (310, 460),     # Bin 4:  Vowel body / Chest resonance
+        (310, 460),     # Bin 4:  Vowel body / Chest resonance (440 Hz Concert A)
         (460, 680),     # Bin 5:  Vowel formant F1 low (o, u)
         (680, 1000),    # Bin 6:  Vowel formant F1 high (a)
         (1000, 1450),   # Bin 7:  Vocal clarity / Nasal cavity
@@ -36,100 +36,117 @@ class AudioAnalyzer:
 
     def __init__(self, sample_rate: int = 16000):
         self.sample_rate = sample_rate
-        self.silence_threshold_db = -45.0
+        self.silence_threshold_dbfs = -42.0
         self.healthy_speech_min_db = -32.0
         self.healthy_speech_max_db = -12.0
         self._phase = 0.0
 
-    def analyze_audio_chunk(
-        self, audio_data: Union[bytes, np.ndarray, float, None], t: Optional[float] = None
+    def analyze_pcm_samples(
+        self,
+        samples: Union[np.ndarray, List[float], bytes, None],
+        sr: Optional[int] = None,
+        t: Optional[float] = None,
     ) -> Dict[str, Any]:
-        """Process incoming audio buffer, floating RMS scalar, or None with full 16-band spectrum."""
+        """Real feature extraction on incoming float32/int16 PCM audio samples."""
         if t is None:
             t = time.time()
+        sample_rate = sr or self.sample_rate
 
-        # Handle None -> Baseline quiet ambient studio noise
-        if audio_data is None:
-            return self._format_result(
-                rms=0.015,
-                db=-36.5,
-                is_speech=False,
-                centroid=850.0,
-                spectral_bins=self.synthesize_spectrum(rms=0.015, is_speech=False, t=t),
-            )
+        # Handle None or empty input -> fallback to synthetic baseline simulation
+        if samples is None:
+            return self.generate_synthetic_simulation(t=t, is_speech=False, rms=0.015)
 
-        # Handle direct scalar RMS sent from WebAudio API or synthetic generator
-        if isinstance(audio_data, (float, int)):
-            rms = float(max(1e-5, audio_data))
-            db = float(20.0 * np.log10(rms))
-            is_speech = bool(db > self.silence_threshold_db)
-            centroid = 1350.0 if is_speech else 420.0
-            spectral_bins = self.synthesize_spectrum(rms=rms, is_speech=is_speech, t=t)
-            return self._format_result(rms, db, is_speech, centroid, spectral_bins)
-
-        # Convert raw byte buffer to floating point numpy array
-        if isinstance(audio_data, bytes):
-            if len(audio_data) == 0:
-                return self._format_result(
-                    rms=0.015,
-                    db=-36.5,
-                    is_speech=False,
-                    centroid=850.0,
-                    spectral_bins=self.synthesize_spectrum(rms=0.015, is_speech=False, t=t),
-                )
+        # Convert input types to 1D float32 array in [-1.0, 1.0]
+        if isinstance(samples, bytes):
+            if len(samples) == 0:
+                return self.generate_synthetic_simulation(t=t, is_speech=False, rms=0.015)
             try:
-                samples = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
+                # Convert 16-bit signed PCM bytes to float32
+                y = np.frombuffer(samples, dtype=np.int16).astype(np.float32) / 32768.0
             except Exception:
-                samples = np.zeros(512, dtype=np.float32)
-        elif isinstance(audio_data, np.ndarray):
-            samples = audio_data.astype(np.float32)
-            if samples.ndim > 1:
-                samples = np.mean(samples, axis=1)
+                y = np.zeros(512, dtype=np.float32)
+        elif isinstance(samples, (list, tuple)):
+            if len(samples) == 0:
+                return self.generate_synthetic_simulation(t=t, is_speech=False, rms=0.015)
+            y = np.asarray(samples, dtype=np.float32)
+        elif isinstance(samples, np.ndarray):
+            if samples.size == 0:
+                return self.generate_synthetic_simulation(t=t, is_speech=False, rms=0.015)
+            if samples.dtype == np.int16:
+                y = samples.astype(np.float32) / 32768.0
+            else:
+                y = samples.astype(np.float32)
+            if y.ndim > 1:
+                y = np.mean(y, axis=0 if y.shape[0] < y.shape[1] else 1)
         else:
-            samples = np.zeros(512, dtype=np.float32)
+            return self.generate_synthetic_simulation(t=t, is_speech=False, rms=0.015)
 
-        if len(samples) == 0 or np.all(samples == 0):
-            return self._format_result(
-                rms=0.015,
-                db=-36.5,
-                is_speech=False,
-                centroid=850.0,
-                spectral_bins=self.synthesize_spectrum(rms=0.015, is_speech=False, t=t),
-            )
+        y = np.squeeze(y)
+        if y.ndim == 0 or len(y) == 0 or np.all(y == 0):
+            return self.generate_synthetic_simulation(t=t, is_speech=False, rms=0.015)
 
-        # Calculate RMS energy
-        rms = float(np.sqrt(np.mean(samples**2)))
-        rms = max(1e-6, rms)
-        db = float(20.0 * np.log10(rms))
+        # 1. Exact Root-Mean-Square (RMS) Energy: RMS = sqrt( (1/N) * sum(x_i^2) )
+        n_samples = len(y)
+        rms = float(np.sqrt(np.mean(y ** 2)))
+        rms_clamped = max(1e-6, rms)
 
-        # Real FFT spectral decomposition
-        spectral_bins, centroid = self._compute_fft_spectrum(samples)
+        # 2. Real Decibels relative to Full Scale (dBFS): dBFS = 20 * log10( max(RMS, 10^-6) )
+        dbfs = float(20.0 * np.log10(rms_clamped))
 
-        is_speech = bool(db > self.silence_threshold_db and 280.0 <= centroid <= 3800.0)
+        # 3. Spectral Centroid using librosa or numpy FFT fallback
+        centroid = self._compute_spectral_centroid(y, sample_rate)
 
-        return self._format_result(rms, db, is_speech, centroid, spectral_bins)
+        # 4. Speech frequency band verification:
+        # Check if spectral centroid is in speech formant band (300 Hz - 3400 Hz)
+        # and RMS exceeds ambient noise threshold (> -42 dBFS)
+        is_speech = bool(dbfs > self.silence_threshold_dbfs and (300.0 <= centroid <= 3400.0))
 
-    def _compute_fft_spectrum(self, samples: np.ndarray) -> Tuple[List[float], float]:
-        """Calculates accurate 16-band normalized energy spectrum and spectral centroid via FFT."""
-        n_samples = len(samples)
-        # Apply Hanning window to reduce spectral leakage
+        # 5. Extract 16 normalized spectral frequency bins (0.0 to 1.0) using FFT magnitude buckets
+        spectral_bins = self._compute_fft_bins(y, sample_rate)
+
+        return self._format_result(
+            rms=rms,
+            dbfs=dbfs,
+            is_speech=is_speech,
+            centroid=centroid,
+            spectral_bins=spectral_bins,
+        )
+
+    def _compute_spectral_centroid(self, y: np.ndarray, sr: int) -> float:
+        """Computes spectral centroid using Librosa if available, falling back to NumPy FFT."""
+        n_samples = len(y)
+        if HAS_LIBROSA and n_samples >= 32:
+            try:
+                # Set n_fft safely to prevent librosa UserWarning
+                n_fft = min(n_samples, 2048)
+                cent = librosa.feature.spectral_centroid(y=y, sr=sr, n_fft=n_fft)
+                return float(np.mean(cent))
+            except Exception:
+                pass
+
+        # NumPy FFT fallback
         window = np.hanning(n_samples)
-        windowed = samples * window
-
-        # Compute one-sided normalized FFT
-        fft_vals = np.fft.rfft(windowed) / float(n_samples)
+        windowed = y * window
+        fft_vals = np.fft.rfft(windowed)
         fft_mags = np.abs(fft_vals)
-        fft_freqs = np.fft.rfftfreq(n_samples, d=1.0 / self.sample_rate)
-
-        # Spectral Centroid: sum(f * mag) / sum(mag)
+        fft_freqs = np.fft.rfftfreq(n_samples, d=1.0 / sr)
         mag_sum = float(np.sum(fft_mags))
         if mag_sum > 1e-9:
-            centroid = float(np.sum(fft_freqs * fft_mags) / mag_sum)
-        else:
-            centroid = 600.0
+            return float(np.sum(fft_freqs * fft_mags) / mag_sum)
+        return 850.0
 
-        # Bin integration across the 16 defined bands
-        bins = []
+    def _compute_fft_bins(self, y: np.ndarray, sr: int) -> List[float]:
+        """Calculates 16 normalized spectral frequency bins (0.0 to 1.0) across defined frequency bands."""
+        n_samples = len(y)
+        window = np.hanning(n_samples)
+        windowed = y * window
+
+        # One-sided normalized FFT
+        fft_vals = np.fft.rfft(windowed) / float(n_samples)
+        fft_mags = np.abs(fft_vals)
+        fft_freqs = np.fft.rfftfreq(n_samples, d=1.0 / sr)
+
+        bins: List[float] = []
         for low_f, high_f in self.FREQ_BANDS:
             mask = (fft_freqs >= low_f) & (fft_freqs < high_f)
             if np.any(mask):
@@ -142,7 +159,45 @@ class AudioAnalyzer:
 
             bins.append(float(round(float(np.clip(norm_val, 0.02, 1.0)), 3)))
 
-        return bins, centroid
+        return bins
+
+    def analyze_audio_chunk(
+        self, audio_data: Union[bytes, np.ndarray, List[float], float, int, None], t: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """Process incoming audio buffer, array of PCM samples, or floating RMS scalar."""
+        if t is None:
+            t = time.time()
+
+        # Handle None -> Baseline quiet ambient studio noise
+        if audio_data is None:
+            return self.generate_synthetic_simulation(t=t, is_speech=False, rms=0.015)
+
+        # Handle direct scalar RMS sent from WebAudio API or synthetic generator
+        if isinstance(audio_data, (float, int)):
+            rms = float(max(1e-6, audio_data))
+            dbfs = float(20.0 * np.log10(rms))
+            is_speech = bool(dbfs > self.silence_threshold_dbfs)
+            centroid = 1350.0 if is_speech else 420.0
+            spectral_bins = self.synthesize_spectrum(rms=rms, is_speech=is_speech, t=t)
+            return self._format_result(rms, dbfs, is_speech, centroid, spectral_bins)
+
+        # Handle raw byte buffer, array, or list of PCM samples
+        return self.analyze_pcm_samples(audio_data, sr=self.sample_rate, t=t)
+
+    def generate_synthetic_simulation(
+        self, t: float = 0.0, is_speech: bool = False, rms: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """Generates realistic synthetic simulation telemetry when no microphone packet is provided."""
+        if rms is None:
+            if is_speech:
+                rms = 0.045 + 0.025 * math.sin(t * 3.2)
+            else:
+                rms = 0.015 + 0.005 * math.sin(t * 1.5)
+        rms = max(1e-6, float(rms))
+        dbfs = float(20.0 * np.log10(rms))
+        centroid = 1250.0 if is_speech else 480.0
+        spectral_bins = self.synthesize_spectrum(rms=rms, is_speech=is_speech, t=t)
+        return self._format_result(rms, dbfs, is_speech, centroid, spectral_bins)
 
     def synthesize_spectrum(
         self, rms: float, is_speech: bool, t: float = 0.0
@@ -201,28 +256,41 @@ class AudioAnalyzer:
         return [float(round(float(np.clip(val, 0.01, 1.0)), 3)) for val in bins]
 
     def _format_result(
-        self, rms: float, db: float, is_speech: bool, centroid: float, spectral_bins: List[float]
+        self, rms: float, dbfs: float, is_speech: bool, centroid: float, spectral_bins: List[float]
     ) -> Dict[str, Any]:
         """Compute the normalized acoustic engagement score (0 - 100) and assemble payload."""
-        # Healthy dialogue sits comfortably between -30 dB and -14 dB
-        if db < -50.0:
+        # Healthy dialogue sits comfortably between -32 dB and -12 dB
+        if dbfs < -50.0:
             score = 35.0
-        elif db < self.healthy_speech_min_db:
-            ratio = (db - (-50.0)) / (self.healthy_speech_min_db - (-50.0))
+        elif dbfs < self.healthy_speech_min_db:
+            ratio = (dbfs - (-50.0)) / (self.healthy_speech_min_db - (-50.0))
             score = 40.0 + ratio * 35.0
-        elif db <= self.healthy_speech_max_db:
-            score = 85.0 + 10.0 * (1.0 - abs(db - (-20.0)) / 12.0)
+        elif dbfs <= self.healthy_speech_max_db:
+            score = 85.0 + 10.0 * (1.0 - abs(dbfs - (-20.0)) / 12.0)
         else:
-            overshoot = min(20.0, db - self.healthy_speech_max_db)
+            overshoot = min(20.0, dbfs - self.healthy_speech_max_db)
             score = max(50.0, 85.0 - overshoot * 2.0)
 
         score = float(np.clip(score, 10.0, 98.0))
 
         return {
             "rms_energy": float(round(rms, 4)),
-            "db_level": float(round(db, 1)),
+            "db_level": float(round(dbfs, 1)),
+            "dbfs": float(round(dbfs, 1)),
+            "is_speech": bool(is_speech),
             "is_speech_active": bool(is_speech),
             "spectral_centroid_hz": float(round(centroid, 1)),
             "acoustic_engagement_score": float(round(score, 1)),
             "spectral_bins": spectral_bins,
         }
+
+
+# Module-level convenience function
+def analyze_pcm_samples(
+    samples: Union[np.ndarray, List[float], bytes, None],
+    sr: int = 16000,
+    t: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Module-level entrypoint for analyzing PCM samples directly."""
+    analyzer = AudioAnalyzer(sample_rate=sr)
+    return analyzer.analyze_pcm_samples(samples, sr=sr, t=t)

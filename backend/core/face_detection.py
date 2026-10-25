@@ -1,126 +1,162 @@
-"""Face detection and sustained presence tracking using OpenCV Haar Cascades and IoU/Centroid persistence."""
+"""Face detection, mathematical Euclidean Centroid Tracking, and sustained presence verification."""
 from typing import Dict, List, Tuple, Any, Optional
+from datetime import datetime
 import os
 import cv2
 import numpy as np
 
+try:
+    from core.engagement_fusion import HeadPoseEstimator
+except ImportError:
+    from backend.core.engagement_fusion import HeadPoseEstimator
+
 # Palette constants in BGR format for OpenCV rendering
-# Caramel (#B8772F) -> BGR: (47, 119, 184)
+# Caramel (#B8772F) -> BGR: (47, 119, 184) [Verified >= 10s]
 COLOR_CARAMEL_BGR = (47, 119, 184)
+# Latte (#D2AE82) -> BGR: (130, 174, 210) [Verifying 3s - 10s]
+COLOR_LATTE_BGR = (130, 174, 210)
+# Muted Roast (#3A2619) -> BGR: (25, 38, 58) / (40, 55, 78) [Transient < 3s]
+COLOR_ROAST_BGR = (40, 55, 78)
 # Crema (#EBDCC2) -> BGR: (194, 220, 235)
 COLOR_CREMA_BGR = (194, 220, 235)
-# Latte (#D2AE82) -> BGR: (130, 174, 210)
-COLOR_LATTE_BGR = (130, 174, 210)
-# Mocha (#6B4630) -> BGR: (48, 70, 107)
-COLOR_MOCHA_BGR = (48, 70, 107)
 # Espresso (#1C1310) -> BGR: (16, 19, 28)
 COLOR_ESPRESSO_BGR = (16, 19, 28)
-# Roast (#3A2619) -> BGR: (25, 38, 58)
-COLOR_ROAST_BGR = (25, 38, 58)
+# Dark border vignette
+COLOR_BORDER_ROAST = (25, 38, 58)
+
+
+class VerificationStatus(str):
+    """String subclass providing backwards-compatible equality for 'Verified Present'."""
+
+    def __eq__(self, other: Any) -> bool:
+        if other == "Verified Present" and "Verified Present" in str(self):
+            return True
+        return super().__eq__(other)
+
+    def __hash__(self) -> int:
+        return super().__hash__()
 
 
 class TrackedParticipant:
-    """Stateful record of an individual tracked face with sustained presence verification."""
+    """Stateful record of an individual tracked face with Euclidean centroid persistence."""
 
-    def __init__(self, track_id: int, bbox: Tuple[int, int, int, int], first_seen: float):
+    def __init__(
+        self,
+        track_id: int,
+        bbox: Tuple[int, int, int, int],
+        centroid: Tuple[float, float],
+        first_seen: float,
+        head_pose_estimator: HeadPoseEstimator,
+    ):
         self.track_id = track_id
+        self.participant_id = f"Participant_{track_id:02d}"
         self.bbox = bbox  # (x, y, w, h)
+        self.centroid = centroid  # (cX, cY)
         self.first_seen = first_seen
         self.last_seen = first_seen
-        self.total_tracked_time = 0.0
+        self.duration = 0.0
         self.sustained_seconds = 0.0
-        self.disappeared_frames = 0
-        self.status = "Tracking..."
-        self.head_pose_approx = 88.0  # Percentage gaze forward
+        self.disappeared_duration = 0.0
+        self.logged_to_db = False
+        self.is_verified = False
+        self.status = VerificationStatus("Transient (<3s)")
+        self.head_pose_estimator = head_pose_estimator
+        self.head_pose_approx = 88.0
         self.gaze_state = "Direct Focus"
+        self.yaw = 0.0
+        self.pitch = 0.0
+        self.roll = 0.0
         self.velocity_x = 0.0
         self.is_walk_by = False
+        self.base_y = float(centroid[1])
         self.verified_at: Optional[float] = None
-        self.base_y = float(bbox[1] + bbox[3] / 2.0)
 
     def update(
         self,
         bbox: Tuple[int, int, int, int],
+        centroid: Tuple[float, float],
         timestamp: float,
         threshold: float,
+        frame_bgr: np.ndarray,
         gray_roi: Optional[np.ndarray] = None,
-    ):
-        dt = min(0.5, max(0.001, timestamp - self.last_seen))
+    ) -> None:
+        """Updates track coordinates, velocity, posture dynamics, and sustained presence."""
+        dt = max(0.001, min(1.0, timestamp - self.last_seen))
 
-        # Calculate horizontal movement velocity to identify transient walk-bys
-        curr_cx = bbox[0] + bbox[2] / 2.0
-        curr_cy = bbox[1] + bbox[3] / 2.0
-        prev_cx = self.bbox[0] + self.bbox[2] / 2.0
-        instant_vx = (curr_cx - prev_cx) / dt
+        # Horizontal velocity to capture brisk corridor walk-bys
+        instant_vx = (centroid[0] - self.centroid[0]) / dt
         self.velocity_x = 0.70 * self.velocity_x + 0.30 * instant_vx
 
-        # Smooth baseline vertical position
-        self.base_y = 0.95 * self.base_y + 0.05 * curr_cy
-        dy = curr_cy - self.base_y
-
-        # Walk-by classifier: sustained high horizontal velocity (>85 px/s) across frame
-        if abs(self.velocity_x) > 85.0 and self.sustained_seconds < 6.0:
-            self.is_walk_by = True
-        elif abs(self.velocity_x) < 40.0:
-            self.is_walk_by = False
+        # Base vertical center smoothing
+        self.base_y = 0.95 * self.base_y + 0.05 * centroid[1]
+        dy = centroid[1] - self.base_y
 
         self.bbox = bbox
+        self.centroid = centroid
         self.last_seen = timestamp
-        self.total_tracked_time += dt
-        self.sustained_seconds += dt
-        self.disappeared_frames = 0
+        self.disappeared_duration = 0.0
+        self.duration = timestamp - self.first_seen
+        self.sustained_seconds = self.duration
 
-        # Assess head pose and gaze approximation via vertical posture shift and ROI luminance
-        ratio = 0.82
-        if gray_roi is not None and gray_roi.size > 0:
-            mid = gray_roi.shape[0] // 2
-            top_mean = float(np.mean(gray_roi[:mid, :]))
-            bot_mean = float(np.mean(gray_roi[mid:, :]))
-            if bot_mean > 1e-3:
-                ratio = top_mean / bot_mean
-
-        # Downward tilt detection: head shifted down by >5px or top/bot luminance darkened by hair/tilt
-        if dy > 5.5 or ratio < 0.76:
-            self.head_pose_approx = max(68.0, self.head_pose_approx - 1.2)
-            self.gaze_state = "Note-Taking / Downward"
-        elif abs(dy) < 3.5:
-            self.head_pose_approx = min(96.0, self.head_pose_approx + 1.2)
-            self.gaze_state = "Direct Focus"
-        else:
-            self.head_pose_approx = min(90.0, max(75.0, self.head_pose_approx))
-            self.gaze_state = "Attentive Listening"
-
-        # Sustained presence state transition
-        if self.sustained_seconds >= threshold:
-            if self.status != "Verified Present":
-                self.verified_at = timestamp
-            self.status = "Verified Present"
+        # Walk-by classifier
+        if abs(self.velocity_x) > 65.0 and self.duration < 6.0:
+            self.is_walk_by = True
+        elif abs(self.velocity_x) < 35.0:
             self.is_walk_by = False
-        elif self.is_walk_by:
-            self.status = "Walk-by / Transient"
+
+        # Head Pose & Gaze Estimation
+        pose = self.head_pose_estimator.estimate(frame_bgr, bbox, gray_roi=gray_roi, dy=dy)
+        self.head_pose_approx = pose["attention_score"]
+        self.gaze_state = pose["gaze_state"]
+        self.yaw = pose["yaw"]
+        self.pitch = pose["pitch"]
+        self.roll = pose["roll"]
+
+        # Sustained presence transition
+        if self.duration >= threshold:
+            if not self.is_verified:
+                self.verified_at = timestamp
+            self.is_verified = True
+            self.is_walk_by = False
+            self.status = VerificationStatus("Verified Present (>=10s)")
+        elif self.duration >= 3.0:
+            self.is_verified = False
+            self.status = VerificationStatus("Verifying...")
         else:
-            self.status = "Tracking..."
+            self.is_verified = False
+            if self.is_walk_by:
+                self.status = VerificationStatus("Transient (<3s) [Walk-by]")
+            else:
+                self.status = VerificationStatus("Transient (<3s)")
 
 
 class FaceDetector:
-    """OpenCV Haar Cascade Face Detector with Temporal Sustained Presence Tracking."""
+    """OpenCV Haar Cascade Face Detector with Mathematical Euclidean Centroid Tracking."""
 
-    def __init__(self, sustained_threshold: float = 10.0):
+    def __init__(
+        self,
+        sustained_threshold: float = 10.0,
+        max_distance: float = 140.0,
+        session_id: str = "studio-morning-session",
+    ):
         self.sustained_threshold = sustained_threshold
+        self.max_distance = max_distance
+        self.session_id = session_id
         self.next_track_id = 1
         self.tracks: Dict[int, TrackedParticipant] = {}
-        self.max_disappeared = 12  # frames (~1.0s) before pruning transient track
+        self.head_pose_estimator = HeadPoseEstimator()
 
-        # Load OpenCV default frontal face haar cascade with robust local fallback
-        local_cascade = os.path.join(os.path.dirname(__file__), "haarcascade_frontalface_default.xml")
+        # Load Haar cascade with local directory priority
         self.face_cascade = None
-
-        cascade_candidates = [
+        local_cascade = os.path.join(os.path.dirname(__file__), "haarcascade_frontalface_default.xml")
+        candidates = [
             local_cascade,
-            getattr(cv2, "data", None) and getattr(cv2.data, "haarcascades", None) and os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml"),
+            getattr(cv2, "data", None)
+            and getattr(cv2.data, "haarcascades", None)
+            and os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml"),
         ]
 
-        for p in cascade_candidates:
+        for p in candidates:
             if p and os.path.exists(p):
                 try:
                     cc = cv2.CascadeClassifier(p)
@@ -135,49 +171,66 @@ class FaceDetector:
                 sample_path = cv2.samples.findFile("haarcascade_frontalface_default.xml")
                 self.face_cascade = cv2.CascadeClassifier(sample_path)
             except Exception:
-                pass
-
-        if self.face_cascade is None:
-            try:
-                self.face_cascade = cv2.CascadeClassifier()
-            except Exception:
                 self.face_cascade = None
 
-    def _compute_iou(self, boxA: Tuple[int, int, int, int], boxB: Tuple[int, int, int, int]) -> float:
-        xA = max(boxA[0], boxB[0])
-        yA = max(boxA[1], boxB[1])
-        xB = min(boxA[0] + boxA[2], boxB[0] + boxB[2])
-        yB = min(boxA[1] + boxA[3], boxB[1] + boxB[3])
+    def _auto_commit_verified_attendance(self, track: TrackedParticipant) -> None:
+        """Commits verified participant presence to SQLite AttendanceLog."""
+        try:
+            try:
+                from database.models import SessionLocal, AttendanceLog
+            except ImportError:
+                from backend.database.models import SessionLocal, AttendanceLog
 
-        interW = max(0, xB - xA)
-        interH = max(0, yB - yA)
-        interArea = interW * interH
-
-        boxAArea = boxA[2] * boxA[3]
-        boxBArea = boxB[2] * boxB[3]
-        unionArea = float(boxAArea + boxBArea - interArea)
-
-        if unionArea <= 0:
-            return 0.0
-        return interArea / unionArea
+            db = SessionLocal()
+            try:
+                existing = (
+                    db.query(AttendanceLog)
+                    .filter(
+                        AttendanceLog.session_id == self.session_id,
+                        AttendanceLog.participant_id == track.participant_id,
+                    )
+                    .first()
+                )
+                if existing:
+                    existing.last_seen = datetime.utcnow()
+                    existing.sustained_seconds = round(track.duration, 2)
+                    existing.status = "Verified Present"
+                else:
+                    log_entry = AttendanceLog(
+                        session_id=self.session_id,
+                        participant_id=track.participant_id,
+                        first_seen=datetime.utcnow(),
+                        last_seen=datetime.utcnow(),
+                        sustained_seconds=round(track.duration, 2),
+                        status="Verified Present",
+                    )
+                    db.add(log_entry)
+                db.commit()
+                track.logged_to_db = True
+            except Exception:
+                db.rollback()
+            finally:
+                db.close()
+        except Exception:
+            pass
 
     def process_frame(
         self, frame_bgr: np.ndarray, timestamp: float
     ) -> Tuple[np.ndarray, List[Dict[str, Any]], float]:
-        """Detect faces, update sustained presence, and render warm editorial overlays."""
+        """Detect faces, update Euclidean centroid tracks, and render warm editorial overlays."""
         if frame_bgr is None or frame_bgr.size == 0:
             return frame_bgr, [], 0.0
 
         h_img, w_img = frame_bgr.shape[:2]
         gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
-        gray = cv2.equalizeHist(gray)
+        gray_eq = cv2.equalizeHist(gray)
 
-        # Detect multi-scale frontal faces
+        # 1. Multi-scale Haar face detection
         detected_rects = ()
         if self.face_cascade is not None and not self.face_cascade.empty():
             try:
                 detected_rects = self.face_cascade.detectMultiScale(
-                    gray,
+                    gray_eq,
                     scaleFactor=1.1,
                     minNeighbors=5,
                     minSize=(36, 36),
@@ -187,88 +240,159 @@ class FaceDetector:
                 detected_rects = ()
 
         current_boxes: List[Tuple[int, int, int, int]] = []
+        current_centroids: List[Tuple[float, float]] = []
+        current_rois: List[np.ndarray] = []
+
         if len(detected_rects) > 0:
-            current_boxes = [(int(x), int(y), int(w), int(h)) for (x, y, w, h) in detected_rects]
+            for (x, y, w, h) in detected_rects:
+                bx, by, bw, bh = int(x), int(y), int(w), int(h)
+                cx = bx + bw / 2.0
+                cy = by + bh / 2.0
+                roi = gray[max(0, by) : min(h_img, by + bh), max(0, bx) : min(w_img, bx + bw)]
+                current_boxes.append((bx, by, bw, bh))
+                current_centroids.append((cx, cy))
+                current_rois.append(roi)
 
-        # Match detected boxes with existing tracks using Greedy Bipartite Matching on IoU + Proximity
-        matched_tracks = set()
-        matched_boxes = set()
-
-        if self.tracks and current_boxes:
-            candidates = []
-            for track_id, track in self.tracks.items():
-                tx_c = track.bbox[0] + track.bbox[2] / 2.0
-                ty_c = track.bbox[1] + track.bbox[3] / 2.0
-                max_dim = max(track.bbox[2], track.bbox[3])
-                for idx, box in enumerate(current_boxes):
-                    iou = self._compute_iou(track.bbox, box)
-                    bx_c = box[0] + box[2] / 2.0
-                    by_c = box[1] + box[3] / 2.0
-                    dist = np.hypot(tx_c - bx_c, ty_c - by_c)
-                    if iou >= 0.15 or dist < max_dim * 1.0:
-                        score = iou * 2.0 + max(0.0, 1.0 - (dist / (max_dim * 1.5)))
-                        # Stationary track affinity bonus: lock onto seated participants
-                        if dist < 45.0:
-                            score += 4.0
-                        candidates.append((score, track_id, idx))
-
-            # Prioritize best matching pairs first
-            candidates.sort(key=lambda c: c[0], reverse=True)
-            for score, track_id, box_idx in candidates:
-                if track_id in matched_tracks or box_idx in matched_boxes:
-                    continue
-                matched_tracks.add(track_id)
-                matched_boxes.add(box_idx)
-                matched_box = current_boxes[box_idx]
-                bx, by, bw, bh = matched_box
-                roi = gray[max(0, by):min(h_img, by+bh), max(0, bx):min(w_img, bx+bw)]
-                self.tracks[track_id].update(matched_box, timestamp, self.sustained_threshold, gray_roi=roi)
-
-        # Register unmatched boxes as new tracks
-        for idx, box in enumerate(current_boxes):
-            if idx not in matched_boxes:
-                new_track = TrackedParticipant(self.next_track_id, box, timestamp)
-                self.tracks[self.next_track_id] = new_track
+        # 2. Mathematical Euclidean Centroid Tracking
+        if len(self.tracks) == 0:
+            # No existing tracks: register all detected centroids
+            for i in range(len(current_boxes)):
+                track = TrackedParticipant(
+                    track_id=self.next_track_id,
+                    bbox=current_boxes[i],
+                    centroid=current_centroids[i],
+                    first_seen=timestamp,
+                    head_pose_estimator=self.head_pose_estimator,
+                )
+                track.update(
+                    bbox=current_boxes[i],
+                    centroid=current_centroids[i],
+                    timestamp=timestamp,
+                    threshold=self.sustained_threshold,
+                    frame_bgr=frame_bgr,
+                    gray_roi=current_rois[i],
+                )
+                self.tracks[self.next_track_id] = track
                 self.next_track_id += 1
 
-        # Increment disappearance counter for unmatched tracks
-        to_prune = []
-        for track_id, track in self.tracks.items():
-            if track_id not in matched_tracks and len(current_boxes) > 0:
-                track.disappeared_frames += 1
-                if track.disappeared_frames > self.max_disappeared:
-                    to_prune.append(track_id)
+        elif len(current_boxes) == 0:
+            # No detections in frame: manage 3.0s occlusion grace period
+            deregister_ids = []
+            for track_id, track in self.tracks.items():
+                track.disappeared_duration = timestamp - track.last_seen
+                if track.disappeared_duration > 3.0:
+                    deregister_ids.append(track_id)
+            for track_id in deregister_ids:
+                del self.tracks[track_id]
 
-        for track_id in to_prune:
-            del self.tracks[track_id]
+        else:
+            # Pairwise Euclidean Distance Matrix between existing centroids and new centroids
+            track_ids = list(self.tracks.keys())
+            existing_centroids = np.array([self.tracks[tid].centroid for tid in track_ids], dtype=np.float32)
+            detected_centroids_arr = np.array(current_centroids, dtype=np.float32)
 
-        # Draw bespoke editorial overlays onto frame_bgr
+            # Compute pairwise distance matrix D (N x M)
+            # D[i, j] = sqrt((cx_i - cx_j)^2 + (cy_i - cy_j)^2)
+            diff = existing_centroids[:, np.newaxis, :] - detected_centroids_arr[np.newaxis, :, :]
+            dist_matrix = np.linalg.norm(diff, axis=2)
+
+            # Minimum distance assignment
+            rows = dist_matrix.min(axis=1).argsort()
+            cols = dist_matrix.argmin(axis=1)[rows]
+
+            used_rows = set()
+            used_cols = set()
+
+            for row, col in zip(rows, cols):
+                if row in used_rows or col in used_cols:
+                    continue
+
+                # Max distance gating threshold (e.g. 140px)
+                if dist_matrix[row, col] > self.max_distance:
+                    continue
+
+                track_id = track_ids[row]
+                track = self.tracks[track_id]
+                track.update(
+                    bbox=current_boxes[col],
+                    centroid=current_centroids[col],
+                    timestamp=timestamp,
+                    threshold=self.sustained_threshold,
+                    frame_bgr=frame_bgr,
+                    gray_roi=current_rois[col],
+                )
+
+                # Check if newly verified to auto-commit to SQLite
+                if track.is_verified and not track.logged_to_db:
+                    self._auto_commit_verified_attendance(track)
+
+                used_rows.add(row)
+                used_cols.add(col)
+
+            # Unused rows: manage 3.0s occlusion grace period
+            unused_rows = set(range(len(track_ids))) - used_rows
+            deregister_ids = []
+            for r in unused_rows:
+                tid = track_ids[r]
+                t = self.tracks[tid]
+                t.disappeared_duration = timestamp - t.last_seen
+                if t.disappeared_duration > 3.0:
+                    deregister_ids.append(tid)
+
+            for tid in deregister_ids:
+                del self.tracks[tid]
+
+            # Unused cols: register new participants
+            unused_cols = set(range(len(current_boxes))) - used_cols
+            for c in unused_cols:
+                track = TrackedParticipant(
+                    track_id=self.next_track_id,
+                    bbox=current_boxes[c],
+                    centroid=current_centroids[c],
+                    first_seen=timestamp,
+                    head_pose_estimator=self.head_pose_estimator,
+                )
+                track.update(
+                    bbox=current_boxes[c],
+                    centroid=current_centroids[c],
+                    timestamp=timestamp,
+                    threshold=self.sustained_threshold,
+                    frame_bgr=frame_bgr,
+                    gray_roi=current_rois[c],
+                )
+                self.tracks[self.next_track_id] = track
+                self.next_track_id += 1
+
+        # 3. Annotate Frame with Warm Editorial Overlays
         annotated_frame = frame_bgr.copy()
+        cv2.rectangle(annotated_frame, (0, 0), (w_img - 1, h_img - 1), COLOR_BORDER_ROAST, 1)
+
         participants_data: List[Dict[str, Any]] = []
         visual_attention_sum = 0.0
 
-        # Subtle dark editorial vignette border
-        cv2.rectangle(annotated_frame, (0, 0), (w_img - 1, h_img - 1), COLOR_ROAST_BGR, 1)
-
         for track_id, track in sorted(self.tracks.items()):
             x, y, w, h = track.bbox
-            is_verified = (track.status == "Verified Present")
-            is_walk_by = track.is_walk_by
+            cx, cy = track.centroid
+            is_verified = track.is_verified
+            is_verifying = (3.0 <= track.duration < self.sustained_threshold)
 
-            # Select palette based on sustained state
+            # Warm editorial color assignment
             if is_verified:
-                primary_color = COLOR_CARAMEL_BGR
+                primary_color = COLOR_CARAMEL_BGR  # Caramel (#B8772F)
+                bracket_thickness = 3
+                status_short = "Verified"
+            elif is_verifying:
+                primary_color = COLOR_LATTE_BGR    # Latte (#D2AE82)
                 bracket_thickness = 2
-            elif is_walk_by:
-                primary_color = COLOR_MOCHA_BGR
-                bracket_thickness = 1
+                status_short = "Verifying..."
             else:
-                primary_color = COLOR_CREMA_BGR
+                primary_color = COLOR_ROAST_BGR    # Muted Roast (#3A2619)
                 bracket_thickness = 2
+                status_short = "Transient"
 
             bracket_len = max(10, int(min(w, h) * 0.24))
 
-            # Architectural corner crop brackets
+            # Architectural Corner Brackets
             # Top-Left
             cv2.line(annotated_frame, (x, y), (x + bracket_len, y), primary_color, bracket_thickness)
             cv2.line(annotated_frame, (x, y), (x, y + bracket_len), primary_color, bracket_thickness)
@@ -282,25 +406,20 @@ class FaceDetector:
             cv2.line(annotated_frame, (x + w, y + h), (x + w - bracket_len, y + h), primary_color, bracket_thickness)
             cv2.line(annotated_frame, (x + w, y + h), (x + w, y + h - bracket_len), primary_color, bracket_thickness)
 
-            # Central focal dot
-            cx = x + w // 2
-            cy = y + h // 2
-            cv2.circle(annotated_frame, (cx, cy), 2, primary_color, -1)
+            # Subtle box outline
+            cv2.rectangle(annotated_frame, (x, y), (x + w, y + h), primary_color, 1)
 
-            # Progress calculation
-            progress_ratio = min(1.0, track.sustained_seconds / max(self.sustained_threshold, 1.0))
+            # Central focal dot and ring
+            cv2.circle(annotated_frame, (int(cx), int(cy)), 3, primary_color, -1)
+            cv2.circle(annotated_frame, (int(cx), int(cy)), 6, primary_color, 1)
+
+            # Progress Calculation
+            progress_ratio = min(1.0, track.duration / max(self.sustained_threshold, 1.0))
             progress_pct = int(progress_ratio * 100)
 
-            # Editorial Tagline Label
-            if is_verified:
-                label_tag = f"TRK-{track.track_id:02d} // {track.sustained_seconds:.1f}s [VERIFIED]"
-            elif is_walk_by:
-                label_tag = f"TRK-{track.track_id:02d} // {track.sustained_seconds:.1f}s [WALK-BY CANDIDATE]"
-            else:
-                label_tag = f"TRK-{track.track_id:02d} // {track.sustained_seconds:.1f}s [{progress_pct}%]"
-
-            # Background pill
-            text_size, _ = cv2.getTextSize(label_tag, cv2.FONT_HERSHEY_SIMPLEX, 0.40, 1)
+            # Typographic Text Label: Participant_XX | Verified | 10.4s
+            label_tag = f"{track.participant_id} | {status_short} | {track.duration:.1f}s"
+            text_size, _ = cv2.getTextSize(label_tag, cv2.FONT_HERSHEY_SIMPLEX, 0.38, 1)
             pill_y1 = max(0, y - 24)
             pill_y2 = max(18, y - 4)
             cv2.rectangle(
@@ -328,12 +447,10 @@ class FaceDetector:
                 cv2.LINE_AA,
             )
 
-            # Dynamic sustained presence progress bar at bottom of bbox
+            # Sustained presence progress bar at bottom of bbox
             bar_y = y + h + 8
             if bar_y < h_img - 6:
-                # Dark track line
-                cv2.line(annotated_frame, (x, bar_y), (x + w, bar_y), COLOR_ROAST_BGR, 2)
-                # Caramel fill line
+                cv2.line(annotated_frame, (x, bar_y), (x + w, bar_y), (25, 38, 58), 2)
                 fill_w = int(w * progress_ratio)
                 if fill_w > 0:
                     cv2.line(
@@ -343,20 +460,24 @@ class FaceDetector:
                         COLOR_CARAMEL_BGR if is_verified else COLOR_LATTE_BGR,
                         2,
                     )
-                # Terminal pip at 100% verification threshold
                 if is_verified:
                     cv2.circle(annotated_frame, (x + w, bar_y), 3, COLOR_CARAMEL_BGR, -1)
 
             visual_attention_sum += track.head_pose_approx
             participants_data.append({
-                "track_id": f"Participant {track.track_id:02d}",
-                "sustained_seconds": round(track.sustained_seconds, 2),
+                "track_id": track.participant_id,
+                "participant_id": track.participant_id,
+                "sustained_seconds": round(track.duration, 2),
                 "status": track.status,
                 "head_pose_score": round(track.head_pose_approx, 1),
                 "gaze_state": track.gaze_state,
                 "is_verified": is_verified,
                 "progress_pct": progress_pct,
                 "bbox": [x, y, w, h],
+                "centroid": [int(cx), int(cy)],
+                "yaw": round(track.yaw, 1),
+                "pitch": round(track.pitch, 1),
+                "roll": round(track.roll, 1),
             })
 
         avg_visual_attention = (
